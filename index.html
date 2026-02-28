@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0a0f1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/manifest.json">
+<title>Murattil - Quran Recitation Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--g:#c9a84c;--bg:#0a0f1a;--c:#111827;--h:#1a2332;--b:#1e2d3d;--t:#e8e0d0;--m:#8899aa;--gn:#4CAF50;--rd:#ef5350;--am:#FF9800}
+body{font-family:'Outfit',system-ui,sans-serif;background:var(--bg);color:var(--t);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body.light{--bg:#f5f0e8;--c:#fff;--h:#f0ead8;--b:#e0d8c8;--t:#2c2416;--m:#7a6e5d}
+.app{max-width:480px;margin:0 auto;min-height:100vh}
+.pg{padding:20px 16px 90px}
+button{cursor:pointer;font-family:inherit;border:none;outline:none}
+.ar{font-family:'Amiri',serif;direction:rtl;line-height:2.2}
+.cd{background:var(--c);border:1px solid var(--b);border-radius:16px;padding:16px}
+.gb{background:var(--g);color:#0a0f1a;border-radius:12px;padding:12px 24px;font-weight:700;font-size:14px;display:inline-flex;align-items:center;gap:8px}
+.gb:active{transform:scale(.97)}
+.ob{background:transparent;color:var(--m);border:1px solid var(--b);border-radius:12px;padding:10px 16px;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:6px}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pu{0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,.4)}50%{box-shadow:0 0 0 12px rgba(201,168,76,0)}}
+@keyframes rc{0%,100%{box-shadow:0 0 0 0 rgba(239,83,80,.5)}50%{box-shadow:0 0 0 14px rgba(239,83,80,0)}}
+@keyframes sp{to{transform:rotate(360deg)}}
+.fi{animation:fi .4s ease forwards}
+.wv{display:flex;align-items:center;gap:2px;height:36px;justify-content:center}
+.wv span{width:3px;border-radius:2px}
+.nv{position:fixed;bottom:0;left:0;right:0;z-index:100;background:var(--c);border-top:1px solid var(--b);backdrop-filter:blur(20px)}
+.nv>div{max-width:480px;margin:0 auto;display:flex;justify-content:space-around;padding:8px 0 max(12px,env(safe-area-inset-bottom))}
+.nv button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 14px;background:none;font-size:11px}
+.nv .on{color:var(--g);font-weight:700}.nv .off{color:var(--m)}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--g);border-radius:3px}
+.tj-gn{color:#4CAF50}.tj-ikh{color:#2196F3}.tj-idg{color:#9C27B0}.tj-iql{color:#FF9800}.tj-qlq{color:#F44336}.tj-md{color:#00BCD4}
+.offline-bar{position:fixed;top:0;left:0;right:0;z-index:200;background:#f59e0b;color:#000;text-align:center;padding:4px;font-size:11px;font-weight:600;display:none}
+.offline-bar.show{display:block}
+.dl-btn{background:var(--h);color:var(--g);border:1px solid rgba(201,168,76,.25);border-radius:10px;padding:8px 14px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.dl-btn:active{transform:scale(.97)}
+.dl-btn.done{background:rgba(76,175,80,.15);color:var(--gn);border-color:rgba(76,175,80,.25)}
+</style>
+</head>
+<body>
+<div id="offline-bar" class="offline-bar">📶 You're offline — cached surahs still available</div>
+<div id="app" class="app"></div>
+<script>
+const API='https://api.alquran.cloud/v1',REC='ar.husary',TR='en.sahih';
+const S=[["الفاتحة","Al-Fatiha","The Opening",7,1,"Meccan"],["البقرة","Al-Baqarah","The Cow",286,1,"Medinan"],["آل عمران","Ali 'Imran","Family of Imran",200,3,"Medinan"],["النساء","An-Nisa","The Women",176,4,"Medinan"],["المائدة","Al-Ma'idah","The Table",120,6,"Medinan"],["الأنعام","Al-An'am","The Cattle",165,7,"Meccan"],["الأعراف","Al-A'raf","The Heights",206,8,"Meccan"],["الأنفال","Al-Anfal","Spoils of War",75,9,"Medinan"],["التوبة","At-Tawbah","Repentance",129,10,"Medinan"],["يونس","Yunus","Jonah",109,11,"Meccan"],["هود","Hud","Hud",123,11,"Meccan"],["يوسف","Yusuf","Joseph",111,12,"Meccan"],["الرعد","Ar-Ra'd","Thunder",43,13,"Medinan"],["إبراهيم","Ibrahim","Abraham",52,13,"Meccan"],["الحجر","Al-Hijr","Rocky Tract",99,14,"Meccan"],["النحل","An-Nahl","The Bee",128,14,"Meccan"],["الإسراء","Al-Isra","Night Journey",111,15,"Meccan"],["الكهف","Al-Kahf","The Cave",110,15,"Meccan"],["مريم","Maryam","Mary",98,16,"Meccan"],["طه","Ta-Ha","Ta-Ha",135,16,"Meccan"],["الأنبياء","Al-Anbiya","The Prophets",112,17,"Meccan"],["الحج","Al-Hajj","Pilgrimage",78,17,"Medinan"],["المؤمنون","Al-Mu'minun","The Believers",118,18,"Meccan"],["النور","An-Nur","The Light",64,18,"Medinan"],["الفرقان","Al-Furqan","The Criterion",77,18,"Meccan"],["الشعراء","Ash-Shu'ara","The Poets",227,19,"Meccan"],["النمل","An-Naml","The Ant",93,19,"Meccan"],["القصص","Al-Qasas","The Stories",88,20,"Meccan"],["العنكبوت","Al-Ankabut","The Spider",69,20,"Meccan"],["الروم","Ar-Rum","The Romans",60,21,"Meccan"],["لقمان","Luqman","Luqman",34,21,"Meccan"],["السجدة","As-Sajdah","Prostration",30,21,"Meccan"],["الأحزاب","Al-Ahzab","Combined Forces",73,21,"Medinan"],["سبأ","Saba","Sheba",54,22,"Meccan"],["فاطر","Fatir","Originator",45,22,"Meccan"],["يس","Ya-Sin","Ya-Sin",83,22,"Meccan"],["الصافات","As-Saffat","Ranged in Ranks",182,23,"Meccan"],["ص","Sad","Sad",88,23,"Meccan"],["الزمر","Az-Zumar","The Groups",75,23,"Meccan"],["غافر","Ghafir","The Forgiver",85,24,"Meccan"],["فصلت","Fussilat","Explained",54,24,"Meccan"],["الشورى","Ash-Shura","Consultation",53,25,"Meccan"],["الزخرف","Az-Zukhruf","Gold",89,25,"Meccan"],["الدخان","Ad-Dukhan","Smoke",59,25,"Meccan"],["الجاثية","Al-Jathiyah","Crouching",37,25,"Meccan"],["الأحقاف","Al-Ahqaf","Sandhills",35,26,"Meccan"],["محمد","Muhammad","Muhammad",38,26,"Medinan"],["الفتح","Al-Fath","Victory",29,26,"Medinan"],["الحجرات","Al-Hujurat","The Rooms",18,26,"Medinan"],["ق","Qaf","Qaf",45,26,"Meccan"],["الذاريات","Adh-Dhariyat","The Winds",60,26,"Meccan"],["الطور","At-Tur","The Mount",49,27,"Meccan"],["النجم","An-Najm","The Star",62,27,"Meccan"],["القمر","Al-Qamar","The Moon",55,27,"Meccan"],["الرحمن","Ar-Rahman","The Merciful",78,27,"Medinan"],["الواقعة","Al-Waqi'ah","The Inevitable",96,27,"Meccan"],["الحديد","Al-Hadid","Iron",29,27,"Medinan"],["المجادلة","Al-Mujadila","The Pleading",22,28,"Medinan"],["الحشر","Al-Hashr","The Exile",24,28,"Medinan"],["الممتحنة","Al-Mumtahanah","Examined",13,28,"Medinan"],["الصف","As-Saf","The Ranks",14,28,"Medinan"],["الجمعة","Al-Jumu'ah","Friday",11,28,"Medinan"],["المنافقون","Al-Munafiqun","Hypocrites",11,28,"Medinan"],["التغابن","At-Taghabun","Mutual Loss",18,28,"Medinan"],["الطلاق","At-Talaq","Divorce",12,28,"Medinan"],["التحريم","At-Tahrim","Prohibition",12,28,"Medinan"],["الملك","Al-Mulk","Sovereignty",30,29,"Meccan"],["القلم","Al-Qalam","The Pen",52,29,"Meccan"],["الحاقة","Al-Haqqah","The Reality",52,29,"Meccan"],["المعارج","Al-Ma'arij","Stairways",44,29,"Meccan"],["نوح","Nuh","Noah",28,29,"Meccan"],["الجن","Al-Jinn","The Jinn",28,29,"Meccan"],["المزمل","Al-Muzzammil","Enshrouded",20,29,"Meccan"],["المدثر","Al-Muddaththir","Cloaked",56,29,"Meccan"],["القيامة","Al-Qiyamah","Resurrection",40,29,"Meccan"],["الإنسان","Al-Insan","The Human",31,29,"Medinan"],["المرسلات","Al-Mursalat","Emissaries",50,29,"Meccan"],["النبأ","An-Naba","The Tidings",40,30,"Meccan"],["النازعات","An-Nazi'at","Those Who Drag",46,30,"Meccan"],["عبس","Abasa","He Frowned",42,30,"Meccan"],["التكوير","At-Takwir","Overthrowing",29,30,"Meccan"],["الانفطار","Al-Infitar","Cleaving",19,30,"Meccan"],["المطففين","Al-Mutaffifin","Defrauding",36,30,"Meccan"],["الانشقاق","Al-Inshiqaq","Sundering",25,30,"Meccan"],["البروج","Al-Buruj","The Stars",22,30,"Meccan"],["الطارق","At-Tariq","Morning Star",17,30,"Meccan"],["الأعلى","Al-A'la","Most High",19,30,"Meccan"],["الغاشية","Al-Ghashiyah","Overwhelming",26,30,"Meccan"],["الفجر","Al-Fajr","The Dawn",30,30,"Meccan"],["البلد","Al-Balad","The City",20,30,"Meccan"],["الشمس","Ash-Shams","The Sun",15,30,"Meccan"],["الليل","Al-Layl","The Night",21,30,"Meccan"],["الضحى","Ad-Duha","Morning Hours",11,30,"Meccan"],["الشرح","Ash-Sharh","The Relief",8,30,"Meccan"],["التين","At-Tin","The Fig",8,30,"Meccan"],["العلق","Al-Alaq","The Clot",19,30,"Meccan"],["القدر","Al-Qadr","The Power",5,30,"Meccan"],["البينة","Al-Bayyinah","Clear Proof",8,30,"Medinan"],["الزلزلة","Az-Zalzalah","Earthquake",8,30,"Medinan"],["العاديات","Al-Adiyat","Coursers",11,30,"Meccan"],["القارعة","Al-Qari'ah","Calamity",11,30,"Meccan"],["التكاثر","At-Takathur","Rivalry",8,30,"Meccan"],["العصر","Al-Asr","Declining Day",3,30,"Meccan"],["الهمزة","Al-Humazah","Traducer",9,30,"Meccan"],["الفيل","Al-Fil","The Elephant",5,30,"Meccan"],["قريش","Quraysh","Quraysh",4,30,"Meccan"],["الماعون","Al-Ma'un","Small Kindnesses",7,30,"Meccan"],["الكوثر","Al-Kawthar","Abundance",3,30,"Meccan"],["الكافرون","Al-Kafirun","Disbelievers",6,30,"Meccan"],["النصر","An-Nasr","Divine Support",3,30,"Medinan"],["المسد","Al-Masad","Palm Fibre",5,30,"Meccan"],["الإخلاص","Al-Ikhlas","Sincerity",4,30,"Meccan"],["الفلق","Al-Falaq","Daybreak",5,30,"Meccan"],["الناس","An-Nas","Mankind",6,30,"Meccan"]];
+const SU=S.map((s,i)=>({n:i+1,ar:s[0],en:s[1],mg:s[2],ac:s[3],jz:s[4],tp:s[5]}));
+const I={play:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',pause:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>',mic:'<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>',stop:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>',home:'<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>',book:'<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1z"/></svg>',chart:'<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>',gear:'<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>',sun:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>',moon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 109 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 01-4.4 2.26 5.403 5.403 0 01-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>',nxt:'<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>',prv:'<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="transform:scaleX(-1)"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>'};
+
+let st={v:'home',dk:true,bm:'surah',q:'',su:null,ai:0,ad:[],ld:false,ph:'idle',pl:false,sp:1,tr:true,sc:null,au:null,
+  pr:JSON.parse(localStorage.getItem('mp')||'null')||{ls:1,la:0,tt:0,sc:{},sk:0,ld:null,td:0}};
+const sv=()=>localStorage.setItem('mp',JSON.stringify(st.pr));
+
+function R(){
+  document.body.className=st.dk?'':'light';
+  let h='';
+  if(st.v==='home')h=rHome();
+  else if(st.v==='browse')h=rBrowse();
+  else if(st.v==='learn')h=rLearn();
+  else if(st.v==='progress')h=rProg();
+  else if(st.v==='settings')h=rSet();
+  h+=`<nav class="nv"><div>${[['home','Home',I.home],['browse','Browse',I.book],['learn','Learn',I.mic],['progress','Progress',I.chart],['settings','Settings',I.gear]].map(([id,l,ic])=>`<button onclick="N('${id}')" class="${st.v===id?'on':'off'}">${ic}<span>${l}</span></button>`).join('')}</div></nav>`;
+  document.getElementById('app').innerHTML=h;
+  if(st.v==='browse'&&st.q){const el=document.getElementById('si');if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length)}}
+}
+
+function wv(col,on){return Array.from({length:24},()=>`<span style="width:3px;height:${on?Math.random()*26+4:3}px;background:${col};opacity:${on?.85:.2};border-radius:2px"></span>`).join('')}
+function sr(s,sz,sw){const r=(sz-sw)/2,c=2*Math.PI*r,o=c-(s/100)*c,cl=s>=80?'var(--gn)':s>=60?'var(--am)':'var(--rd)';return`<svg width="${sz}" height="${sz}" style="transform:rotate(-90deg);display:block;margin:0 auto"><circle cx="${sz/2}" cy="${sz/2}" r="${r}" fill="none" stroke="currentColor" stroke-width="${sw}" opacity=".1"/><circle cx="${sz/2}" cy="${sz/2}" r="${r}" fill="none" stroke="${cl}" stroke-width="${sw}" stroke-dasharray="${c}" stroke-dashoffset="${o}" stroke-linecap="round" style="transition:stroke-dashoffset .8s"/><text x="${sz/2}" y="${sz/2}" text-anchor="middle" dominant-baseline="central" fill="${cl}" font-size="${sz*.28}" font-weight="700" style="transform:rotate(90deg);transform-origin:center">${s}%</text></svg>`}
+function td(){const t=new Date().toDateString();return st.pr.ld&&new Date(st.pr.ld).toDateString()===t?st.pr.td||0:0}
+
+// ─── PAGES ──────────────────────────────────────────
+function rHome(){
+  const ls=SU.find(s=>s.n===st.pr.ls)||SU[0];
+  return`<div class="pg fi"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><div><h1 style="font-size:26px;font-weight:800;color:var(--g);font-family:'Amiri',serif">مُرَتِّل</h1><p style="font-size:12px;color:var(--m)">Quran Recitation Academy</p></div><button onclick="st.dk=!st.dk;R()" style="width:40px;height:40px;border-radius:50%;background:var(--h);color:var(--g);display:flex;align-items:center;justify-content:center">${st.dk?I.sun:I.moon}</button></div>
+  <div class="cd" style="text-align:center;padding:28px 20px;margin-bottom:16px;border-color:rgba(201,168,76,.15);background:linear-gradient(135deg,var(--h),var(--c))"><p class="ar" style="font-size:30px;color:var(--g)">بِسْمِ اللَّهِ الرَّحْمَـٰنِ الرَّحِيمِ</p><p style="font-size:12px;color:var(--m);margin-top:10px">Learning with Sheikh Al-Husary's methodology</p></div>
+  <div class="cd" onclick="selS(${st.pr.ls})" style="margin-bottom:16px;cursor:pointer;border-color:rgba(201,168,76,.25)"><div style="display:flex;justify-content:space-between;align-items:center"><div><p style="font-size:10px;font-weight:700;color:var(--g);letter-spacing:1.5px">CONTINUE LEARNING</p><h3 style="font-size:18px;font-weight:700;margin:4px 0">${ls.en}</h3><p style="font-size:12px;color:var(--m)">Ayah ${st.pr.la+1} · ${ls.mg}</p></div><div style="width:48px;height:48px;border-radius:50%;background:var(--g);display:flex;align-items:center;justify-content:center;color:#0a0f1a">${I.play}</div></div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">${[['📖','Ayahs',st.pr.tt],['🎯','Today',td()],['🔥','Streak',st.pr.sk+'d']].map(([e,l,v])=>`<div class="cd" style="text-align:center;padding:14px"><span style="font-size:20px">${e}</span><p style="font-size:20px;font-weight:800;margin:4px 0">${v}</p><p style="font-size:10px;color:var(--m)">${l}</p></div>`).join('')}</div>
+  <h3 style="font-size:14px;font-weight:700;margin-bottom:10px">Quick Start — Juz Amma</h3>
+  <div style="display:flex;flex-wrap:wrap;gap:8px">${SU.filter(s=>s.jz===30).slice(0,12).map(s=>`<button onclick="selS(${s.n})" style="padding:8px 14px;border-radius:10px;font-size:12px;font-weight:600;background:var(--h);color:var(--t);border:1px solid var(--b)">${s.en}</button>`).join('')}</div></div>`}
+
+function rBrowse(){
+  const q=st.q.toLowerCase(),fl=SU.filter(s=>s.ar.includes(st.q)||s.en.toLowerCase().includes(q)||s.mg.toLowerCase().includes(q)||s.n.toString()===st.q);
+  let list='';
+  if(st.bm==='surah'){list=fl.map(s=>{const sc=st.pr.sc[s.n+'-0'];return`<button onclick="selS(${s.n})" style="width:100%;text-align:left;display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--c);border:1px solid var(--b);border-radius:14px;margin-bottom:5px"><div style="width:36px;height:36px;border-radius:10px;background:rgba(201,168,76,.1);display:flex;align-items:center;justify-content:center;color:var(--g);font-size:13px;font-weight:700;flex-shrink:0">${s.n}</div><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between"><div><p style="font-size:13px;font-weight:600">${s.en}</p><p style="font-size:10px;color:var(--m)">${s.mg}</p></div><p class="ar" style="font-size:17px;color:var(--g);margin-left:8px;flex-shrink:0">${s.ar}</p></div><p style="font-size:10px;color:var(--m);margin-top:2px">${s.ac} ayahs · ${s.tp} · Juz ${s.jz}${sc?' · <span style="color:var(--gn)">'+sc+'%</span>':''}</p></div></button>`}).join('')}
+  else{for(let j=1;j<=30;j++){const js=SU.filter(s=>s.jz===j);if(!js.length)continue;list+=`<div class="cd" style="margin-bottom:10px;padding:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="font-size:14px;font-weight:700">Juz ${j}</h3><p class="ar" style="font-size:16px;color:var(--g)">الجزء ${j}</p></div><div style="display:flex;flex-wrap:wrap;gap:6px">${js.map(s=>`<button onclick="selS(${s.n})" style="padding:6px 12px;border-radius:8px;font-size:11px;font-weight:600;background:var(--h);color:var(--t);border:1px solid var(--b)">${s.en}</button>`).join('')}</div></div>`}}
+  return`<div class="pg fi"><h2 style="font-size:20px;font-weight:800;margin-bottom:14px">Browse Quran</h2><div style="display:flex;gap:8px;margin-bottom:12px">${['surah','juz'].map(m=>`<button onclick="st.bm='${m}';R()" style="padding:10px 22px;border-radius:12px;font-size:13px;font-weight:600;${st.bm===m?'background:var(--g);color:#0a0f1a':'background:var(--c);color:var(--m);border:1px solid var(--b)'}">${m==='surah'?'By Surah':'By Juz'}</button>`).join('')}</div><input id="si" type="text" placeholder="Search surah name, number..." value="${st.q}" oninput="st.q=this.value;R()" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--b);background:var(--c);color:var(--t);font-size:13px;margin-bottom:12px">${st.bm==='surah'?`<p style="font-size:11px;color:var(--m);margin-bottom:8px">${fl.length} surahs</p>`:''}${list}</div>`}
+
+function rLearn(){
+  if(!st.su)return`<div class="pg fi" style="text-align:center;padding-top:80px"><p style="font-size:48px;margin-bottom:16px">📖</p><h3 style="font-size:17px;font-weight:700;margin-bottom:8px">Select a Surah to Begin</h3><p style="font-size:13px;color:var(--m);margin-bottom:20px">Choose a surah from Browse</p><button class="gb" onclick="N('browse')">${I.book} Browse Quran</button></div>`;
+  if(st.ld)return`<div class="pg" style="text-align:center;padding-top:80px"><div style="width:40px;height:40px;border:3px solid var(--g);border-top-color:transparent;border-radius:50%;animation:sp 1s linear infinite;margin:0 auto 12px"></div><p style="font-size:13px;color:var(--m)">Loading ${st.su.en}...</p></div>`;
+  const s=st.su,a=st.ad[st.ai];
+  if(!a)return`<div class="pg"><p style="color:var(--m)">No data. Check internet and retry.</p><button class="gb" style="margin-top:12px" onclick="selS(${s.n})">Retry</button></div>`;
+  const ps=st.pr.sc[s.n+'-'+st.ai];
+  const mx=Math.min(st.ad.length,40);
+  let dots='';for(let i=0;i<mx;i++){const sc=st.pr.sc[s.n+'-'+i];dots+=`<span onclick="goA(${i})" style="display:inline-block;width:${i===st.ai?20:7}px;height:7px;border-radius:4px;cursor:pointer;transition:all .3s;background:${i===st.ai?'var(--g)':sc?(sc>=80?'var(--gn)':'var(--am)'):'rgba(136,153,170,.2)'}"></span>`}
+  if(st.ad.length>40)dots+=`<span style="font-size:10px;color:var(--m);margin-left:4px">+${st.ad.length-40}</span>`;
+
+  let pr='';
+  if(st.ph==='idle')pr=`<p style="font-size:13px;color:var(--m);margin-bottom:14px;text-align:center">Listen to the teacher, then record your recitation</p><div style="text-align:center"><button class="gb" onclick="stL()">${I.play} Start Lesson</button></div>`;
+  else if(st.ph==='teacher')pr=`<p style="font-size:13px;color:var(--am);font-weight:600;text-align:center;margin-bottom:8px">🎧 Listen carefully...</p><div class="wv">${wv('var(--am)',true)}</div>`;
+  else if(st.ph==='ready')pr=`<p style="font-size:13px;color:#60a5fa;font-weight:600;text-align:center;margin-bottom:14px">🎤 Your turn — tap to record</p><div style="text-align:center"><button onclick="stR()" style="width:64px;height:64px;border-radius:50%;background:var(--rd);color:#fff;display:inline-flex;align-items:center;justify-content:center;animation:rc 1.5s ease infinite">${I.mic}</button></div>`;
+  else if(st.ph==='recording')pr=`<p style="font-size:13px;color:var(--rd);font-weight:600;text-align:center;margin-bottom:8px">🔴 Recording... Recite now</p><div class="wv">${wv('var(--rd)',true)}</div><div style="text-align:center;margin-top:12px"><button onclick="spR()" style="padding:10px 24px;border-radius:12px;background:var(--rd);color:#fff;font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:6px">${I.stop} Stop</button></div>`;
+  else if(st.ph==='evaluating')pr=`<div style="text-align:center;padding:16px 0"><div style="width:40px;height:40px;border:3px solid var(--g);border-top-color:transparent;border-radius:50%;animation:sp 1s linear infinite;margin:0 auto 10px"></div><p style="font-size:13px;color:var(--m)">${st.evalMsg||'Analyzing with Quran AI...'}</p></div>`;
+  else if(st.ph==='result'){
+    const sc=st.sc;
+    const hasScore=sc!==null&&sc!==undefined;
+    const cl=hasScore?(sc>=80?'var(--gn)':sc>=60?'var(--am)':'var(--rd)'):'var(--m)';
+    const mg=!hasScore?'Could not evaluate':sc>=90?'Excellent! \u0645\u0627 \u0634\u0627\u0621 \u0627\u0644\u0644\u0647':sc>=80?'Very Good! \u0623\u062d\u0633\u0646\u062a':sc>=70?'Good \u2014 keep practicing':'Needs more practice';
+    // Word-by-word highlight
+    let wordsHTML='';
+    if(st.wordResults&&st.wordResults.length){
+      wordsHTML='<div style="margin-top:12px;padding:12px;border-radius:10px;background:var(--h);border:1px solid var(--b)"><p style="font-size:10px;color:var(--m);margin-bottom:8px;font-weight:600">WORD-BY-WORD RESULT</p><p class="ar" style="font-size:20px;text-align:center;line-height:2.4">'+st.wordResults.map(w=>{
+        const c=w.st==='ok'?'var(--gn)':w.st==='wrong'?'var(--am)':'var(--rd)';
+        const bg=w.st==='ok'?'rgba(76,175,80,.12)':w.st==='wrong'?'rgba(255,152,0,.12)':'rgba(239,83,80,.12)';
+        return '<span style="color:'+c+';background:'+bg+';padding:2px 6px;border-radius:6px;margin:2px;display:inline-block">'+w.word+'</span>';
+      }).join(' ')+'</p><p style="font-size:9px;color:var(--m);margin-top:6px"><span style="color:var(--gn)">\u25CF Correct</span> \u00B7 <span style="color:var(--am)">\u25CF Mispronounced</span> \u00B7 <span style="color:var(--rd)">\u25CF Missed</span></p></div>';
+    }
+    // Feedback cards
+    let fbHTML='';
+    if(st.feedback&&st.feedback.length){fbHTML='<div style="margin-top:12px;text-align:left">'+st.feedback.map(f=>`<div style="padding:8px 10px;border-radius:8px;margin-bottom:4px;font-size:11px;border:1px solid ${f.ok?'rgba(76,175,80,.2)':'rgba(255,152,0,.2)'};background:${f.ok?'rgba(76,175,80,.06)':'rgba(255,152,0,.06)'}"><span style="font-weight:700;color:${f.ok?'var(--gn)':'var(--am)'}">${f.ok?'\u2713':'\u26A0'} ${f.rule}</span><br><span style="color:var(--m)">${f.tip}</span></div>`).join('')+'</div>'}
+    // What AI heard
+    let heardHTML='';
+    if(st.recognizedText&&st.recognizedText.trim()){heardHTML=`<div style="margin-top:10px;padding:8px 10px;border-radius:8px;background:var(--h);border:1px solid var(--b)"><p style="font-size:10px;color:var(--m);margin-bottom:4px;font-weight:600">AI TRANSCRIPTION OF YOUR RECITATION</p><p class="ar" style="font-size:16px;text-align:center">${st.recognizedText}</p></div>`}
+    // Summary line
+    let summaryHTML='';
+    if(st.comparisonDetails&&hasScore){const c=st.comparisonDetails;summaryHTML=`<p style="font-size:11px;color:var(--m);margin-top:8px">${c.matched}/${c.total} words correct${c.wrong?' \u00B7 '+c.wrong+' wrong':''}${c.missed?' \u00B7 '+c.missed+' missed':''}</p>`}
+    pr=`<div style="text-align:center">${hasScore?sr(sc,90,7):''}<p style="font-size:15px;font-weight:700;color:${cl};margin:10px 0 4px">${mg}</p>${summaryHTML}${wordsHTML}${heardHTML}${fbHTML}<div style="display:flex;justify-content:center;gap:10px;margin-top:16px"><button class="ob" onclick="rtA()">\u21BB Retry</button>${st.ai<st.ad.length-1?`<button class="gb" onclick="nxA()">Next ${I.nxt}</button>`:''}</div></div>`}
+
+  // Download status for this surah
+  const dlSt=dlProgress[s.n];
+  const dlBtn=dlSt==='done'?`<button class="dl-btn done" disabled>✓ Available Offline</button>`
+    :dlSt==='loading'?`<button class="dl-btn" disabled>⏳ Downloading...</button>`
+    :`<button class="dl-btn" onclick="dlSurah(${s.n})">⬇ Download for Offline</button>`;
+
+  return`<div class="pg fi">
+  <div class="cd" style="text-align:center;padding:18px;margin-bottom:12px;border-color:rgba(201,168,76,.15);background:linear-gradient(135deg,var(--h),var(--c))"><p class="ar" style="font-size:22px;color:var(--g)">سورة ${s.ar}</p><p style="font-size:12px;color:var(--m);margin-top:3px">${s.en} · ${s.ac} Ayahs · ${s.tp}</p><p style="font-size:10px;color:var(--m);margin-top:2px">Teacher: Sheikh Al-Husary</p><div style="margin-top:8px">${dlBtn}</div></div>
+  <div style="display:flex;justify-content:center;gap:3px;margin-bottom:12px;flex-wrap:wrap;padding:0 8px">${dots}</div>
+  <div class="cd" style="text-align:center;padding:28px 20px;margin-bottom:12px;min-height:140px;display:flex;flex-direction:column;justify-content:center"><p style="font-size:10px;font-weight:700;color:var(--g);letter-spacing:1.5px;margin-bottom:14px">AYAH ${a.num}</p><p class="ar" style="font-size:26px;text-align:center">${tjHL(a.txt)}</p>${st.tr?`<p style="font-size:12px;color:var(--m);margin-top:14px;line-height:1.6">${a.trl}</p>`:''}${ps?`<p style="font-size:10px;color:var(--gn);margin-top:8px">Best: ${ps}%</p>`:''}<p style="font-size:9px;color:var(--m);margin-top:6px;opacity:.6">Colors: <span class="tj-gn">Ghunnah</span> · <span class="tj-qlq">Qalqalah</span> · <span class="tj-md">Madd</span></p></div>
+  <div class="cd" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><p style="font-size:10px;font-weight:700;color:var(--g);letter-spacing:1.2px">TEACHER AUDIO</p><div style="display:flex;gap:4px">${[0.5,0.75,1].map(sp=>`<button onclick="sSp(${sp})" style="padding:4px 10px;border-radius:6px;font-size:10px;font-weight:600;${st.sp===sp?'background:var(--g);color:#0a0f1a':'background:var(--h);color:var(--m)'}">${sp}x</button>`).join('')}</div></div><div style="display:flex;align-items:center;gap:10px"><button onclick="tgT()" style="width:42px;height:42px;border-radius:50%;background:${st.pl?'var(--am)':'var(--g)'};color:#0a0f1a;display:flex;align-items:center;justify-content:center;flex-shrink:0;${st.pl?'animation:pu 2s ease infinite':''}">${st.pl?I.pause:I.play}</button><div class="wv" style="flex:1">${wv('var(--g)',st.pl)}</div></div></div>
+  <div class="cd" style="margin-bottom:12px"><p style="font-size:10px;font-weight:700;color:var(--g);letter-spacing:1.2px;margin-bottom:12px">YOUR RECITATION</p>${pr}</div>
+  <div style="display:flex;justify-content:space-between"><button class="ob" onclick="pvA()" ${st.ai===0?'disabled style="opacity:.3;pointer-events:none"':''}>${I.prv} Prev</button><button class="ob" onclick="st.tr=!st.tr;R()">${st.tr?'Hide':'Show'} Translation</button><button class="ob" onclick="nxA()" ${st.ai>=st.ad.length-1?'disabled style="opacity:.3;pointer-events:none"':''}>Next ${I.nxt}</button></div></div>`}
+
+function rProg(){
+  const sc=Object.entries(st.pr.sc),rc=sc.slice(-15),av=rc.length?Math.round(rc.reduce((s,[,v])=>s+v,0)/rc.length):0;
+  let bars=rc.length?rc.map(([,v])=>{const c=v>=80?'var(--gn)':v>=60?'var(--am)':'var(--rd)';return`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px"><span style="font-size:9px;color:var(--m)">${v}</span><div style="width:100%;height:${v}%;border-radius:3px;background:${c};opacity:.8;min-height:3px"></div></div>`}).join(''):'<p style="font-size:12px;color:var(--m);text-align:center;padding:20px 0;width:100%">Practice to see scores here</p>';
+  return`<div class="pg fi"><h2 style="font-size:20px;font-weight:800;margin-bottom:16px">Your Progress</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px"><div class="cd" style="text-align:center;padding:20px">${sr(av,80,6)}<p style="font-size:11px;color:var(--m);margin-top:8px">Avg Score</p></div><div class="cd" style="padding:18px"><p style="font-size:26px;font-weight:800;color:var(--g)">${st.pr.tt}</p><p style="font-size:11px;color:var(--m)">Total Ayahs</p><p style="font-size:26px;font-weight:800;color:var(--gn);margin-top:12px">${st.pr.sk}</p><p style="font-size:11px;color:var(--m)">Day Streak</p></div></div><div class="cd"><h3 style="font-size:13px;font-weight:700;margin-bottom:12px">Recent Scores</h3><div style="display:flex;align-items:flex-end;gap:4px;height:100px">${bars}</div></div></div>`}
+
+function rSet(){
+  const tg=(on,fn)=>`<button onclick="${fn}" style="width:48px;height:26px;border-radius:13px;background:${on?'var(--g)':'var(--h)'};position:relative"><div style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:3px;left:${on?25:3}px;transition:left .3s;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div></button>`;
+  return`<div class="pg fi"><h2 style="font-size:20px;font-weight:800;margin-bottom:16px">Settings</h2><div style="display:flex;flex-direction:column;gap:10px"><div class="cd" style="display:flex;justify-content:space-between;align-items:center"><div><p style="font-size:14px;font-weight:600">Dark Mode</p><p style="font-size:11px;color:var(--m)">Toggle theme</p></div>${tg(st.dk,"st.dk=!st.dk;R()")}</div><div class="cd" style="display:flex;justify-content:space-between;align-items:center"><div><p style="font-size:14px;font-weight:600">Show Translation</p><p style="font-size:11px;color:var(--m)">English below ayahs</p></div>${tg(st.tr,"st.tr=!st.tr;R()")}</div><div class="cd" style="display:flex;justify-content:space-between;align-items:center"><div><p style="font-size:14px;font-weight:600">Playback Speed</p></div><div style="display:flex;gap:6px">${[0.5,0.75,1].map(sp=>`<button onclick="sSp(${sp})" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;${st.sp===sp?'background:var(--g);color:#0a0f1a':'background:var(--h);color:var(--m)'}">${sp}x</button>`).join('')}</div></div><div class="cd" style="text-align:center;padding:20px"><p class="ar" style="font-size:24px;color:var(--g)">مُرَتِّل</p><p style="font-size:12px;color:var(--m);margin-top:4px">Quran Recitation Academy · Phase 1</p></div><button onclick="if(confirm('Reset all progress?')){st.pr={ls:1,la:0,tt:0,sc:{},sk:0,ld:null,td:0};sv();R()}" style="padding:14px;border-radius:12px;background:transparent;border:1px solid rgba(239,83,80,.3);color:var(--rd);font-weight:600;font-size:13px;text-align:center">Reset All Progress</button></div></div>`}
+
+// ─── ACTIONS ────────────────────────────────────────
+function N(v){st.v=v;R()}
+function selS(n){
+  const s=SU.find(x=>x.n===n);st.su=s;st.ai=0;st.ad=[];st.ph='idle';st.pl=false;xA();
+  st.v='learn';st.ld=true;R();
+  Promise.all([fetch(`${API}/surah/${n}/${REC}`).then(r=>r.json()),fetch(`${API}/surah/${n}/${TR}`).then(r=>r.json())])
+  .then(([ar,tr])=>{st.ad=ar.data.ayahs.map((a,i)=>({num:a.numberInSurah,txt:a.text,url:a.audio,trl:tr.data.ayahs[i]?.text||''}));if(st.pr.ls===n)st.ai=Math.min(st.pr.la,st.ad.length-1);st.ld=false;R()})
+  .catch(()=>{st.ld=false;st.ad=[{num:1,txt:'⚠️ Failed to load — check internet',url:'',trl:''}];R()})
+}
+function goA(i){st.ai=i;st.ph='idle';st.sc=null;xA();R()}
+function nxA(){if(st.ai<st.ad.length-1){st.ai++;st.ph='idle';st.sc=null;xA();R()}}
+function pvA(){if(st.ai>0){st.ai--;st.ph='idle';st.sc=null;xA();R()}}
+function rtA(){st.ph='idle';st.sc=null;R()}
+function sSp(s){st.sp=s;if(st.au)st.au.playbackRate=s;R()}
+function xA(){if(st.au){st.au.pause();st.au=null}st.pl=false}
+function tgT(){if(st.pl){xA();R();return}const a=st.ad[st.ai];if(!a||!a.url)return;st.au=new Audio(a.url);st.au.playbackRate=st.sp;st.au.onended=()=>{st.pl=false;if(st.ph==='teacher')st.ph='ready';R()};st.au.onerror=()=>{st.pl=false;R()};st.au.play().then(()=>{st.pl=true;R()}).catch(()=>{})}
+function stL(){st.ph='teacher';const a=st.ad[st.ai];if(!a||!a.url){st.ph='ready';R();return}st.au=new Audio(a.url);st.au.playbackRate=st.sp;st.au.onended=()=>{st.pl=false;st.ph='ready';R()};st.au.play().then(()=>{st.pl=true;R()}).catch(()=>{st.ph='ready';R()})}
+let mr=null,rc=[];
+// ═══════════════════════════════════════════════════════════
+// REAL AI: Tarteel's Whisper Quran model on HuggingFace
+// Records audio → sends to AI → gets Arabic transcription
+// → word-by-word comparison → real accuracy feedback
+// ═══════════════════════════════════════════════════════════
+const HF_MODEL='tarteel-ai/whisper-base-ar-quran';
+// Use our Netlify Function proxy to avoid CORS issues
+const HF_URL='/api/transcribe';
+
+// Convert AudioBuffer to 16kHz mono WAV (what Whisper needs)
+function bufToWav(buf){
+  const sr=16000,nc=1;
+  const offCtx=new OfflineAudioContext(nc,buf.duration*sr,sr);
+  const s=offCtx.createBufferSource();s.buffer=buf;s.connect(offCtx.destination);s.start();
+  return offCtx.startRendering().then(rb=>{
+    const d=rb.getChannelData(0),ab=new ArrayBuffer(44+d.length*2),v=new DataView(ab);
+    const ws=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))};
+    ws(0,'RIFF');v.setUint32(4,36+d.length*2,true);ws(8,'WAVE');ws(12,'fmt ');
+    v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,nc,true);
+    v.setUint32(24,sr,true);v.setUint32(28,sr*nc*2,true);v.setUint16(32,nc*2,true);
+    v.setUint16(34,16,true);ws(36,'data');v.setUint32(40,d.length*2,true);
+    let o=44;for(let i=0;i<d.length;i++){const s=Math.max(-1,Math.min(1,d[i]));v.setInt16(o,s<0?s*0x8000:s*0x7FFF,true);o+=2}
+    return new Blob([ab],{type:'audio/wav'});
+  });
+}
+async function toWav(blob){
+  const ac=new(window.AudioContext||window.webkitAudioContext)();
+  const ab=await blob.arrayBuffer(),buf=await ac.decodeAudioData(ab);ac.close();
+  return bufToWav(buf);
+}
+// Send WAV to Tarteel Whisper on HuggingFace
+async function aiTranscribe(wav){
+  const r=await fetch(HF_URL,{method:'POST',headers:{'Content-Type':'audio/wav'},body:wav});
+  if(!r.ok)return{err:'fail'};
+  const d=await r.json();
+  // Our proxy returns {error:'loading'} or {error:'hf_error'} on failure
+  if(d.error==='loading')return{err:'loading'};
+  if(d.error)return{err:d.error};
+  return{err:null,text:d.text||''};
+}
+// Normalize Arabic for comparison
+function norm(t){
+  return t.replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED]/g,'')
+    .replace(/[\u0671]/g,'\u0627').replace(/[\u0625\u0623\u0622\u0672\u0673]/g,'\u0627')
+    .replace(/\u0629/g,'\u0647').replace(/\u0649/g,'\u064A').replace(/\s+/g,' ').trim();
+}
+// Word-by-word comparison using Levenshtein alignment
+function cmpWords(heard,expected){
+  const hw=norm(heard).split(' ').filter(w=>w),ew=norm(expected).split(' ').filter(w=>w);
+  const eorig=expected.split(' ').filter(w=>w.trim());
+  if(!hw.length)return{score:0,words:eorig.map(w=>({word:w,st:'missed'})),matched:0,wrong:0,missed:ew.length,total:ew.length,extra:0};
+  const m=ew.length,n=hw.length;
+  const dp=Array.from({length:m+1},()=>Array(n+1).fill(0));
+  for(let i=0;i<=m;i++)dp[i][0]=i;
+  for(let j=0;j<=n;j++)dp[0][j]=j;
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++){
+    if(ew[i-1]===hw[j-1])dp[i][j]=dp[i-1][j-1];
+    else dp[i][j]=1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  }
+  const wr=eorig.map(w=>({word:w,st:'missed'}));
+  let i=m,j=n;
+  while(i>0&&j>0){
+    if(ew[i-1]===hw[j-1]){wr[i-1].st='ok';i--;j--}
+    else if(dp[i-1][j-1]<=dp[i-1][j]&&dp[i-1][j-1]<=dp[i][j-1]){wr[i-1].st='wrong';i--;j--}
+    else if(dp[i-1][j]<dp[i][j-1]){wr[i-1].st='missed';i--}
+    else{j--}
+  }
+  while(i>0){wr[i-1].st='missed';i--}
+  const matched=wr.filter(w=>w.st==='ok').length,wrong=wr.filter(w=>w.st==='wrong').length,missed=wr.filter(w=>w.st==='missed').length;
+  return{score:ew.length?Math.round(matched/ew.length*100):0,words:wr,matched,wrong,missed,total:ew.length,extra:Math.max(0,n-m)};
+}
+// Start recording
+function stR(){
+  navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}}).then(s=>{
+    rc=[];mr=new MediaRecorder(s);
+    mr.ondataavailable=e=>{if(e.data.size>0)rc.push(e.data)};
+    mr.onstop=()=>{s.getTracks().forEach(t=>t.stop());evR(new Blob(rc,{type:'audio/webm'}))};
+    mr.start(100);st.ph='recording';R();
+  }).catch(()=>{alert('Microphone access required.')})
+}
+function spR(){if(mr&&mr.state!=='inactive'){mr.stop();st.ph='evaluating';st.evalMsg='Sending to Quran AI...';R()}}
+// Evaluate with AI
+async function evR(blob){
+  const tx=st.ad[st.ai]?.txt||'';
+  try{
+    const wav=await toWav(blob);
+    st.evalMsg='Analyzing your recitation with AI...';R();
+    let res=await aiTranscribe(wav);
+    if(res.err==='loading'){
+      st.evalMsg='AI model warming up — first use takes ~20s...';R();
+      await new Promise(r=>setTimeout(r,20000));
+      res=await aiTranscribe(wav);
+    }
+    if(res.err){st.sc=null;st.ph='result';st.recognizedText='';st.wordResults=[];st.feedback=[{rule:'AI Unavailable',ok:false,tip:'Model could not process audio. Try again in 30 seconds — first use requires a cold start.'}];st.comparisonDetails=null;R();return}
+    // Real comparison
+    const c=cmpWords(res.text,tx);
+    st.sc=c.score;st.wordResults=c.words;st.recognizedText=res.text;st.comparisonDetails=c;
+    st.feedback=[];
+    if(c.score===100)st.feedback.push({rule:'Perfect! \u2714',ok:true,tip:'\u0645\u0627 \u0634\u0627\u0621 \u0627\u0644\u0644\u0647 \u2014 Every word matched!'});
+    else{
+      if(c.missed>0)st.feedback.push({rule:c.missed+' word'+(c.missed>1?'s':'')+' missed',ok:false,tip:'Red words were not detected in your recitation'});
+      if(c.wrong>0)st.feedback.push({rule:c.wrong+' word'+(c.wrong>1?'s':'')+' mispronounced',ok:false,tip:'Orange words were recited differently'});
+      if(c.extra>0)st.feedback.push({rule:c.extra+' extra word'+(c.extra>1?'s':''),ok:false,tip:'You said words not in this ayah'});
+      if(c.score<50)st.feedback.push({rule:'Needs practice',ok:false,tip:'Listen to the teacher again and try matching word by word'});
+    }
+    if(tx.includes('\u0651'))st.feedback.push({rule:'Tajweed: Ghunnah (\u063a\u0646\u0629)',ok:c.score>=80,tip:'Nasalization on shaddah letters \u2014 hold 2 counts'});
+    st.ph='result';
+    const sn=st.su.n,ai=st.ai,k=sn+'-'+ai,p=st.pr,today=new Date().toDateString(),ld=p.ld?new Date(p.ld).toDateString():null;
+    if(ld!==today){const y=new Date();y.setDate(y.getDate()-1);p.sk=ld===y.toDateString()?p.sk+1:1;p.td=1}else{p.td=(p.td||0)+1}
+    p.ls=sn;p.la=ai;p.tt++;p.sc[k]=Math.max(p.sc[k]||0,c.score);p.ld=new Date().toISOString();sv();R();
+  }catch(e){console.error('evR error:',e);st.sc=null;st.ph='result';st.feedback=[{rule:'Error',ok:false,tip:'Could not process recording: '+e.message}];R()}
+}
+
+// Tajweed text highlighting — color-code common rules
+function tjHL(txt){
+  // This is simplified — a full implementation would parse every letter's context
+  let h=txt;
+  // Shaddah + noon/meem = ghunnah (green)
+  h=h.replace(/(نّ|مّ)/g,'<span class="tj-gn">$1</span>');
+  // Qalqalah letters with visible sukoon context (red)
+  h=h.replace(/([قطبجد])ْ/g,'<span class="tj-qlq">$1ْ</span>');
+  // Madd (cyan) — alef maddah
+  h=h.replace(/(آ|ٓ)/g,'<span class="tj-md">$1</span>');
+  return h;
+}
+
+// Download surah for offline
+let dlProgress={};
+function dlSurah(n){
+  if(dlProgress[n]==='done'||dlProgress[n]==='loading')return;
+  dlProgress[n]='loading';R();
+  // Fetch surah data (triggers service worker caching)
+  Promise.all([
+    fetch(`${API}/surah/${n}/${REC}`).then(r=>r.json()),
+    fetch(`${API}/surah/${n}/${TR}`).then(r=>r.json())
+  ]).then(([ar])=>{
+    // Pre-fetch all audio files to trigger SW cache
+    const audioUrls=ar.data.ayahs.map(a=>a.audio).filter(Boolean);
+    return Promise.allSettled(audioUrls.map(u=>fetch(u)));
+  }).then(()=>{
+    dlProgress[n]='done';
+    // Save download state
+    const dl=JSON.parse(localStorage.getItem('m_dl')||'{}');dl[n]=true;localStorage.setItem('m_dl',JSON.stringify(dl));
+    R();
+  }).catch(()=>{dlProgress[n]=null;R()});
+}
+// Load saved download states
+try{const dl=JSON.parse(localStorage.getItem('m_dl')||'{}');Object.keys(dl).forEach(k=>{dlProgress[parseInt(k)]='done'})}catch(e){}
+
+// ─── Offline detection ──────────────────────────────
+window.addEventListener('online',()=>{document.getElementById('offline-bar').classList.remove('show')});
+window.addEventListener('offline',()=>{document.getElementById('offline-bar').classList.add('show')});
+if(!navigator.onLine)document.getElementById('offline-bar').classList.add('show');
+
+// ─── PWA Service Worker Registration ────────────────
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js').then(r=>{
+    console.log('SW registered',r.scope);
+  }).catch(e=>console.log('SW failed',e));
+}
+
+R();
+</script>
+</body>
+</html>

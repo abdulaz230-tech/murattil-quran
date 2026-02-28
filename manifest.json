@@ -1,0 +1,18 @@
+{
+  "name": "Murattil - Quran Recitation Academy",
+  "short_name": "Murattil",
+  "description": "Learn Quran recitation with Tajweed",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0a0f1a",
+  "background_color": "#0a0f1a",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%230a0f1a' stroke='%23c9a84c' stroke-width='2'/><text x='50' y='65' text-anchor='middle' fill='%23c9a84c' font-family='serif' font-size='38' font-weight='bold'>مُ</text></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
