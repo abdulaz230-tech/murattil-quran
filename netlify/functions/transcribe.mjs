@@ -1,9 +1,10 @@
 // Netlify Function: Fixed proxy to Tarteel Whisper on HuggingFace
-// Uses official HuggingFace Inference API with proper retry logic
+// Uses the NEW router.huggingface.co endpoint (api-inference is deprecated)
 
 const HF_API_KEY = Netlify.env.get("HF_API_KEY");
 const HF_MODEL_ID = "tarteel-ai/whisper-base-ar-quran";
-const HF_API_URL = `https://api-inference.huggingface.co/models/${HF_MODEL_ID}`;
+// NEW ENDPOINT - api-inference.huggingface.co is deprecated!
+const HF_API_URL = `https://router.huggingface.co/hf-inference/models/${HF_MODEL_ID}`;
 
 const MAX_RETRIES = 5;
 const BASE_WAIT = 20000; // 20 seconds
@@ -31,18 +32,19 @@ export default async (request) => {
       "Content-Type": "audio/wav",
     };
 
-    // Add API key if available (STRONGLY RECOMMENDED)
+    // Add API key if available
     if (HF_API_KEY) {
       headers["Authorization"] = `Bearer ${HF_API_KEY}`;
       console.log("[Transcribe] Using HuggingFace API key for faster inference");
     } else {
-      console.warn("[Transcribe] No HF_API_KEY set - using free tier (slower, may timeout)");
+      console.warn("[Transcribe] No HF_API_KEY set - using free tier (slower)");
     }
 
     // Retry loop
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
         console.log(`[Transcribe] Attempt ${attempt + 1}/${MAX_RETRIES} to ${HF_MODEL_ID}`);
+        console.log(`[Transcribe] Using endpoint: ${HF_API_URL}`);
 
         // Wait before retry (except on first attempt)
         if (attempt > 0) {
@@ -63,6 +65,8 @@ export default async (request) => {
         });
 
         clearTimeout(timeoutId);
+
+        console.log(`[Transcribe] Response status: ${response.status}`);
 
         // Handle 503 (model loading)
         if (response.status === 503) {
@@ -88,13 +92,13 @@ export default async (request) => {
         // Handle other errors
         if (!response.ok) {
           const errorText = await response.text();
-          console.error(`[Transcribe] HTTP ${response.status}:`, errorText);
+          console.error(`[Transcribe] HTTP ${response.status}:`, errorText.substring(0, 200));
           
           return new Response(
             JSON.stringify({
               error: "api_error",
               status: response.status,
-              detail: errorText,
+              detail: errorText.substring(0, 200),
             }),
             {
               status: 200,
