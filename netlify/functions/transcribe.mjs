@@ -1,11 +1,9 @@
-// Netlify Function: Simple proxy to Tarteel Whisper on HuggingFace
-// Receives audio from browser, forwards to HF Inference API, returns transcription
-// This runs server-side so there are no CORS issues
+// Netlify Function: proxy audio to HuggingFace Whisper for Quran transcription
+// Uses openai/whisper-large-v3 (available on free HF Inference API)
 
-const HF_URL = "https://router.huggingface.co/hf-inference/models/tarteel-ai/whisper-base-ar-quran";
+const HF_URL = "https://router.huggingface.co/hf-inference/models/openai/whisper-large-v3";
 
 export default async (request) => {
-  // Only POST allowed
   if (request.method !== "POST") {
     return new Response(JSON.stringify({ error: "POST required" }), {
       status: 405,
@@ -14,50 +12,40 @@ export default async (request) => {
   }
 
   try {
-    // Get the raw audio bytes from the request
     const audioData = await request.arrayBuffer();
-    console.log("Audio received:", audioData.byteLength, "bytes");
+    console.log("Received audio:", audioData.byteLength, "bytes");
 
     if (!audioData || audioData.byteLength < 100) {
-      return new Response(JSON.stringify({ error: "no_audio", detail: "No audio data received" }), {
+      return new Response(JSON.stringify({ error: "no_audio" }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    // Send directly to HuggingFace Inference API
-    // The API accepts raw audio bytes with Content-Type header
+    // Forward raw audio to HuggingFace
     const hfRes = await fetch(HF_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "audio/wav",
-      },
+      headers: { "Content-Type": "audio/wav" },
       body: audioData,
     });
 
-    console.log("HF response status:", hfRes.status);
-
-    // Read the response
     const hfBody = await hfRes.text();
-    console.log("HF response body:", hfBody.substring(0, 500));
+    console.log("HF status:", hfRes.status, "body:", hfBody.substring(0, 300));
 
     if (!hfRes.ok) {
-      // Model is loading (cold start) - returns 503
       if (hfRes.status === 503) {
-        return new Response(JSON.stringify({ error: "loading", detail: "Model is loading, retry in 20-30 seconds" }), {
+        return new Response(JSON.stringify({ error: "loading" }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
       }
-      // Other HF error
       return new Response(JSON.stringify({ error: "hf_error", status: hfRes.status, detail: hfBody.substring(0, 300) }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    // Success - return the transcription as-is
-    // HF returns: {"text": "بسم الله الرحمن الرحيم"}
+    // Success - return transcription
     return new Response(hfBody, {
       status: 200,
       headers: { "Content-Type": "application/json" },
