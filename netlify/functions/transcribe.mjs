@@ -1,5 +1,5 @@
-// Netlify Function: proxy audio to HuggingFace Whisper for Quran transcription
-// IMPORTANT: Uses openai/whisper-large-v3 because tarteel-ai model is NOT on free HF API
+// Netlify Function: proxy audio to HuggingFace Whisper
+// Uses openai/whisper-large-v3 with API token authentication
 
 const HF_URL = "https://router.huggingface.co/hf-inference/models/openai/whisper-large-v3";
 
@@ -22,9 +22,22 @@ export default async (request) => {
       });
     }
 
+    // Get HF token from Netlify environment variable
+    const token = process.env.HF_TOKEN;
+    if (!token) {
+      console.error("HF_TOKEN not set in environment variables");
+      return new Response(
+        JSON.stringify({ error: "config_error", detail: "HF_TOKEN not configured. Add it in Netlify Site Configuration > Environment Variables." }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     const hfRes = await fetch(HF_URL, {
       method: "POST",
-      headers: { "Content-Type": "audio/wav" },
+      headers: {
+        "Content-Type": "audio/wav",
+        "Authorization": "Bearer " + token,
+      },
       body: audioData,
     });
 
