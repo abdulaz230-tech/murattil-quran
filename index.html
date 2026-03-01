@@ -6,130 +6,47 @@ async function evR(blob){
     st.evalMsg='Analyzing your recitation with AI...';R();
     
     // Enhanced retry logic matching backend
-    let maxClientAttempts = 3;
-    let attempt = 0;
-    let res = null;
+    let maxClientAttempts=3;
+    let attempt=0;
+    let res=null;
 
-    while (attempt < maxClientAttempts) {
-      res = await aiTranscribe(wav);
+    while(attempt<maxClientAttempts){
+      res=await aiTranscribe(wav);
       
-      if (res.err === 'loading') {
+      if(res.err==='loading'){
         attempt++;
-        if (attempt < maxClientAttempts) {
-          const waitTime = 30000 + (attempt - 1) * 20000; // 30s, 50s, 70s
-          st.evalMsg = `AI warming up (attempt ${attempt + 1}/${maxClientAttempts + 1})... Please wait ${Math.ceil(waitTime / 1000)}s...`;
+        if(attempt<maxClientAttempts){
+          const waitTime=30000+(attempt-1)*20000;
+          st.evalMsg=`AI warming up (attempt ${attempt+1}/${maxClientAttempts+1})... Please wait ${Math.ceil(waitTime/1000)}s...`;
           R();
-          await new Promise(r => setTimeout(r, waitTime));
+          await new Promise(r=>setTimeout(r,waitTime));
           continue;
         }
       }
       break;
     }
 
-    if (res.err) {
-      st.sc = null;
-      st.ph = 'result';
-      st.recognizedText = '';
-      st.wordResults = [];
-      st.feedback = [{
-        rule: 'AI Unavailable',
-        ok: false,
-        tip: res.err === 'loading' 
-          ? 'The AI model is taking longer to start. Please wait 2-3 minutes and try again.'
-          : res.err === 'network_error'
-          ? 'Network error. Check your internet and try again.'
-          : 'Model could not process audio. Try again in 30 seconds — first use requires a cold start.'
-      }];
-      st.comparisonDetails = null;
-      R();
-      return;
+    if(res.err){
+      st.sc=null;st.ph='result';st.recognizedText='';st.wordResults=[];
+      st.feedback=[{rule:'AI Unavailable',ok:false,tip:res.err==='loading'?'The AI model is taking longer to start. Please wait 2-3 minutes and try again.':res.err==='network_error'?'Network error. Check your internet and try again.':'Model could not process audio. Try again in 30 seconds — first use requires a cold start.'}];
+      st.comparisonDetails=null;R();return;
     }
 
     // Real comparison
-    const c = cmpWords(res.text, tx);
-    st.sc = c.score;
-    st.wordResults = c.words;
-    st.recognizedText = res.text;
-    st.comparisonDetails = c;
-    st.feedback = [];
-
-    if (c.score === 100) {
-      st.feedback.push({
-        rule: 'Perfect! ✔',
-        ok: true,
-        tip: 'ما شاء الله — Every word matched!',
-      });
-    } else {
-      if (c.missed > 0) {
-        st.feedback.push({
-          rule: c.missed + ' word' + (c.missed > 1 ? 's' : '') + ' missed',
-          ok: false,
-          tip: 'Red words were not detected in your recitation',
-        });
-      }
-      if (c.wrong > 0) {
-        st.feedback.push({
-          rule: c.wrong + ' word' + (c.wrong > 1 ? 's' : '') + ' mispronounced',
-          ok: false,
-          tip: 'Orange words were recited differently',
-        });
-      }
-      if (c.extra > 0) {
-        st.feedback.push({
-          rule: c.extra + ' extra word' + (c.extra > 1 ? 's' : ''),
-          ok: false,
-          tip: 'You said words not in this ayah',
-        });
-      }
-      if (c.score < 50) {
-        st.feedback.push({
-          rule: 'Needs practice',
-          ok: false,
-          tip: 'Listen to the teacher again and try matching word by word',
-        });
-      }
+    const c=cmpWords(res.text,tx);
+    st.sc=c.score;st.wordResults=c.words;st.recognizedText=res.text;st.comparisonDetails=c;st.feedback=[];
+    if(c.score===100)st.feedback.push({rule:'Perfect! ✔',ok:true,tip:'ما شاء الله — Every word matched!'});
+    else{
+      if(c.missed>0)st.feedback.push({rule:c.missed+' word'+(c.missed>1?'s':'')+' missed',ok:false,tip:'Red words were not detected in your recitation'});
+      if(c.wrong>0)st.feedback.push({rule:c.wrong+' word'+(c.wrong>1?'s':'')+' mispronounced',ok:false,tip:'Orange words were recited differently'});
+      if(c.extra>0)st.feedback.push({rule:c.extra+' extra word'+(c.extra>1?'s':''),ok:false,tip:'You said words not in this ayah'});
+      if(c.score<50)st.feedback.push({rule:'Needs practice',ok:false,tip:'Listen to the teacher again and try matching word by word'});
     }
-
-    if (tx.includes('\u0651')) {
-      st.feedback.push({
-        rule: 'Tajweed: Ghunnah (غنة)',
-        ok: c.score >= 80,
-        tip: 'Nasalization on shaddah letters — hold 2 counts',
-      });
-    }
-
-    st.ph = 'result';
-    const sn = st.su.n, ai = st.ai, k = sn + '-' + ai, p = st.pr;
-    const today = new Date().toDateString();
-    const ld = p.ld ? new Date(p.ld).toDateString() : null;
-
-    if (ld !== today) {
-      const y = new Date();
-      y.setDate(y.getDate() - 1);
-      p.sk = ld === y.toDateString() ? p.sk + 1 : 1;
-      p.td = 1;
-    } else {
-      p.td = (p.td || 0) + 1;
-    }
-
-    p.ls = sn;
-    p.la = ai;
-    p.tt++;
-    p.sc[k] = Math.max(p.sc[k] || 0, c.score);
-    p.ld = new Date().toISOString();
-    sv();
-    R();
-  } catch (e) {
-    console.error('evR error:', e);
-    st.sc = null;
-    st.ph = 'result';
-    st.feedback = [
-      {
-        rule: 'Error',
-        ok: false,
-        tip: 'Could not process recording: ' + e.message,
-      },
-    ];
-    R();
-  }
+    if(tx.includes('\u0651'))st.feedback.push({rule:'Tajweed: Ghunnah (غنة)',ok:c.score>=80,tip:'Nasalization on shaddah letters — hold 2 counts'});
+    
+    st.ph='result';
+    const sn=st.su.n,ai=st.ai,k=sn+'-'+ai,p=st.pr,today=new Date().toDateString(),ld=p.ld?new Date(p.ld).toDateString():null;
+    if(ld!==today){const y=new Date();y.setDate(y.getDate()-1);p.sk=ld===y.toDateString()?p.sk+1:1;p.td=1}else{p.td=(p.td||0)+1}
+    p.ls=sn;p.la=ai;p.tt++;p.sc[k]=Math.max(p.sc[k]||0,c.score);p.ld=new Date().toISOString();sv();R();
+  }catch(e){console.error('evR error:',e);st.sc=null;st.ph='result';st.feedback=[{rule:'Error',ok:false,tip:'Could not process recording: '+e.message}];R()}
 }
