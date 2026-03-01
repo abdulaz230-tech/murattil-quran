@@ -129,7 +129,33 @@ function rLearn(){
     // Summary line
     let summaryHTML='';
     if(st.comparisonDetails&&hasScore){const c=st.comparisonDetails;summaryHTML=`<p style="font-size:11px;color:var(--m);margin-top:8px">${c.matched}/${c.total} words correct${c.wrong?' \u00B7 '+c.wrong+' wrong':''}${c.missed?' \u00B7 '+c.missed+' missed':''}</p>`}
-    pr=`<div style="text-align:center">${hasScore?sr(sc,90,7):''}<p style="font-size:15px;font-weight:700;color:${cl};margin:10px 0 4px">${mg}</p>${summaryHTML}${wordsHTML}${heardHTML}${fbHTML}<div style="display:flex;justify-content:center;gap:10px;margin-top:16px"><button class="ob" onclick="rtA()">\u21BB Retry</button>${st.ai<st.ad.length-1?`<button class="gb" onclick="nxA()">Next ${I.nxt}</button>`:''}</div></div>`}
+    pr=`<div style="text-align:center">${hasScore?sr(sc,90,7):''}<p style="font-size:15px;font-weight:700;color:${cl};margin:10px 0 4px">${mg}</p>${summaryHTML}${wordsHTML}${heardHTML}${fbHTML}<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:16px">${hasScore&&sc<100&&st.wordResults&&st.wordResults.some(w=>w.st!=='ok')?`<button onclick="startPractice()" style="padding:10px 18px;border-radius:12px;background:rgba(33,150,243,.15);color:#42a5f5;border:1px solid rgba(33,150,243,.25);font-weight:700;font-size:13px">🔤 Practice Mistakes</button>`:''}<button class="ob" onclick="rtA()">\u21BB Retry Full</button>${st.ai<st.ad.length-1?`<button class="gb" onclick="nxA()">Next ${I.nxt}</button>`:''}</div></div>`}
+  // Practice mode — drill individual wrong/missed words
+  else if(st.ph==='practice'){
+    const pw=st.practiceWords||[];
+    const ci=st.practiceIdx||0;
+    const cw=pw[ci];
+    const total=pw.length;
+    const done=st.practiceDone||[];
+    if(!cw){
+      // All words practiced — show summary
+      pr=`<div style="text-align:center;padding:16px 0"><p style="font-size:40px;margin-bottom:10px">🎉</p><p style="font-size:17px;font-weight:700;color:var(--gn);margin-bottom:6px">All words mastered!</p><p style="font-size:12px;color:var(--m);margin-bottom:16px">You practiced ${total} word${total>1?'s':''} successfully</p><div style="display:flex;justify-content:center;gap:10px"><button class="ob" onclick="rtA()">↻ Retry Full Ayah</button>${st.ai<st.ad.length-1?`<button class="gb" onclick="nxA()">Next ${I.nxt}</button>`:''}</div></div>`;
+    }else{
+      // Show current word to practice
+      const prog=done.length+'/'+total;
+      let phase=st.practicePhase||'listen';
+      let inner='';
+      if(phase==='listen')inner=`<button class="gb" onclick="playWord()" style="margin-top:12px">${I.play} Listen</button>`;
+      else if(phase==='record')inner=`<div style="text-align:center;margin-top:12px"><button onclick="stPR()" style="width:56px;height:56px;border-radius:50%;background:var(--rd);color:#fff;display:inline-flex;align-items:center;justify-content:center;animation:rc 1.5s ease infinite">${I.mic}</button><p style="font-size:11px;color:var(--m);margin-top:6px">Say this word</p></div>`;
+      else if(phase==='recording')inner=`<p style="font-size:12px;color:var(--rd);font-weight:600;margin-bottom:8px">🔴 Recording...</p><div style="text-align:center"><button onclick="stpPR()" style="padding:8px 20px;border-radius:10px;background:var(--rd);color:#fff;font-weight:700;font-size:12px">${I.stop} Stop</button></div>`;
+      else if(phase==='evaluating')inner=`<div style="width:30px;height:30px;border:3px solid var(--g);border-top-color:transparent;border-radius:50%;animation:sp 1s linear infinite;margin:8px auto"></div>`;
+      else if(phase==='correct')inner=`<p style="font-size:14px;font-weight:700;color:var(--gn);margin-top:8px">✓ Correct!</p><p style="font-size:11px;color:var(--m);margin-top:4px">Moving to next word...</p>`;
+      else if(phase==='wrong')inner=`<p style="font-size:14px;font-weight:700;color:var(--rd);margin-top:8px">✗ Try again</p><p style="font-size:11px;color:var(--m);margin-top:4px">AI heard: <span class="ar">${st.practiceHeard||''}</span></p><button onclick="st.practicePhase='listen';R()" style="margin-top:8px;padding:6px 16px;border-radius:8px;background:var(--h);color:var(--t);border:1px solid var(--b);font-size:12px;font-weight:600">↻ Try Again</button>`;
+      // Progress dots for practice
+      const pdots=pw.map((_,i)=>{const d=done.includes(i);return`<span style="display:inline-block;width:${i===ci?16:8}px;height:8px;border-radius:4px;background:${d?'var(--gn)':i===ci?'#42a5f5':'rgba(136,153,170,.2)'};margin:0 2px"></span>`}).join('');
+      pr=`<div style="text-align:center"><p style="font-size:10px;font-weight:700;color:#42a5f5;letter-spacing:1.5px;margin-bottom:6px">PRACTICE MODE — ${prog}</p><div style="margin-bottom:12px">${pdots}</div><div style="padding:20px;border-radius:12px;background:var(--h);border:1px solid rgba(33,150,243,.2)"><p class="ar" style="font-size:34px;color:var(--t)">${cw.word}</p><p style="font-size:10px;color:var(--m);margin-top:6px">${cw.st==='wrong'?'Mispronounced':'Missed'} — practice until correct</p>${inner}</div><button onclick="rtA()" style="margin-top:14px;padding:6px 14px;border-radius:8px;background:none;color:var(--m);border:1px solid var(--b);font-size:11px">✕ Exit Practice</button></div>`;
+    }
+  }
 
   // Download status for this surah
   const dlSt=dlProgress[s.n];
@@ -316,6 +342,103 @@ async function evR(blob){
 }
 
 // Tajweed text highlighting — color-code common rules
+// ═══════════════════════════════════════════════════════════
+// PRACTICE MODE — Drill individual wrong/missed words
+// ═══════════════════════════════════════════════════════════
+function startPractice(){
+  // Gather wrong/missed words with their indices
+  const mistakes=[];
+  st.wordResults.forEach((w,i)=>{if(w.st!=='ok')mistakes.push({word:w.word,st:w.st,idx:i})});
+  if(!mistakes.length){rtA();return}
+  st.practiceWords=mistakes;
+  st.practiceIdx=0;
+  st.practiceDone=[];
+  st.practicePhase='listen';
+  st.practiceHeard='';
+  st.ph='practice';
+  R();
+}
+// Play teacher audio for context, then highlight the word
+function playWord(){
+  const a=st.ad[st.ai];
+  if(!a||!a.url){st.practicePhase='record';R();return}
+  st.au=new Audio(a.url);
+  st.au.playbackRate=0.75; // Slower for practice
+  st.au.onended=()=>{st.pl=false;st.practicePhase='record';R()};
+  st.au.play().then(()=>{st.pl=true;R()}).catch(()=>{st.practicePhase='record';R()});
+}
+// Record for practice mode
+let prc=[];
+function stPR(){
+  navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}}).then(s=>{
+    prc=[];const pmr=new MediaRecorder(s);
+    pmr.ondataavailable=e=>{if(e.data.size>0)prc.push(e.data)};
+    pmr.onstop=()=>{s.getTracks().forEach(t=>t.stop());evPR(new Blob(prc,{type:'audio/webm'}))};
+    st._pmr=pmr;
+    pmr.start(100);st.practicePhase='recording';R();
+  }).catch(()=>{alert('Microphone access required.')});
+}
+function stpPR(){if(st._pmr&&st._pmr.state!=='inactive'){st._pmr.stop();st.practicePhase='evaluating';R()}}
+// Evaluate practice recording
+async function evPR(blob){
+  try{
+    const wav=await toWav(blob);
+    const res=await aiTranscribe(wav);
+    if(res.err){st.practicePhase='wrong';st.practiceHeard='(AI error)';R();return}
+    const heard=norm(res.text).trim();
+    const pw=st.practiceWords[st.practiceIdx];
+    const target=norm(pw.word).trim();
+    // Check if the target word appears in what was heard
+    const heardWords=heard.split(' ').filter(w=>w);
+    const targetWords=target.split(' ').filter(w=>w);
+    // Match: target word found in transcription
+    let match=false;
+    if(targetWords.length===1){
+      match=heardWords.some(hw=>hw===targetWords[0]);
+    }else{
+      match=heard.includes(target);
+    }
+    // Also accept if Levenshtein distance is small (allows minor diacritical differences)
+    if(!match&&targetWords.length===1&&heardWords.length>=1){
+      for(const hw of heardWords){
+        if(levDist(hw,targetWords[0])<=1){match=true;break}
+      }
+    }
+    st.practiceHeard=res.text;
+    if(match){
+      st.practicePhase='correct';R();
+      // Auto-advance after 1.2s
+      setTimeout(()=>{
+        st.practiceDone.push(st.practiceIdx);
+        st.practiceIdx++;
+        if(st.practiceIdx>=st.practiceWords.length){
+          // All done
+          st.practicePhase=null;
+        }else{
+          st.practicePhase='listen';
+        }
+        R();
+      },1200);
+    }else{
+      st.practicePhase='wrong';R();
+    }
+  }catch(e){st.practicePhase='wrong';st.practiceHeard='(error)';R()}
+}
+// Simple Levenshtein distance for single words
+function levDist(a,b){
+  const m=a.length,n=b.length;
+  const d=Array.from({length:m+1},(_,i)=>i);
+  for(let j=1;j<=n;j++){
+    let prev=d[0];d[0]=j;
+    for(let i=1;i<=m;i++){
+      const t=d[i];
+      d[i]=a[i-1]===b[j-1]?prev:1+Math.min(prev,d[i],d[i-1]);
+      prev=t;
+    }
+  }
+  return d[m];
+}
+
 function tjHL(txt){
   // This is simplified — a full implementation would parse every letter's context
   let h=txt;
