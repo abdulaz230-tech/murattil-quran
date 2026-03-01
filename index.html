@@ -110,7 +110,7 @@ function rLearn(){
     const sc=st.sc;
     const hasScore=sc!==null&&sc!==undefined;
     const cl=hasScore?(sc>=80?'var(--gn)':sc>=60?'var(--am)':'var(--rd)'):'var(--m)';
-    const mg=!hasScore?'Could not evaluate':sc>=90?'Excellent! \u0645\u0627 \u0634\u0627\u0621 \u0627\u0644\u0644\u0647':sc>=80?'Very Good! \u0623\u062d\u0633\u0646\u062a':sc>=70?'Good \u2014 keep practicing':'Needs more practice';
+    const mg=!hasScore?'Could not evaluate':sc>=90?'Excellent! ما شاء الله':sc>=80?'Very Good! أحسنت':sc>=70?'Good — keep practicing':'Needs more practice';
     // Word-by-word highlight
     let wordsHTML='';
     if(st.wordResults&&st.wordResults.length){
@@ -118,18 +118,18 @@ function rLearn(){
         const c=w.st==='ok'?'var(--gn)':w.st==='wrong'?'var(--am)':'var(--rd)';
         const bg=w.st==='ok'?'rgba(76,175,80,.12)':w.st==='wrong'?'rgba(255,152,0,.12)':'rgba(239,83,80,.12)';
         return '<span style="color:'+c+';background:'+bg+';padding:2px 6px;border-radius:6px;margin:2px;display:inline-block">'+w.word+'</span>';
-      }).join(' ')+'</p><p style="font-size:9px;color:var(--m);margin-top:6px"><span style="color:var(--gn)">\u25CF Correct</span> \u00B7 <span style="color:var(--am)">\u25CF Mispronounced</span> \u00B7 <span style="color:var(--rd)">\u25CF Missed</span></p></div>';
+      }).join(' ')+'</p><p style="font-size:9px;color:var(--m);margin-top:6px"><span style="color:var(--gn)">● Correct</span> · <span style="color:var(--am)">● Mispronounced</span> · <span style="color:var(--rd)">● Missed</span></p></div>';
     }
     // Feedback cards
     let fbHTML='';
-    if(st.feedback&&st.feedback.length){fbHTML='<div style="margin-top:12px;text-align:left">'+st.feedback.map(f=>`<div style="padding:8px 10px;border-radius:8px;margin-bottom:4px;font-size:11px;border:1px solid ${f.ok?'rgba(76,175,80,.2)':'rgba(255,152,0,.2)'};background:${f.ok?'rgba(76,175,80,.06)':'rgba(255,152,0,.06)'}"><span style="font-weight:700;color:${f.ok?'var(--gn)':'var(--am)'}">${f.ok?'\u2713':'\u26A0'} ${f.rule}</span><br><span style="color:var(--m)">${f.tip}</span></div>`).join('')+'</div>'}
+    if(st.feedback&&st.feedback.length){fbHTML='<div style="margin-top:12px;text-align:left">'+st.feedback.map(f=>`<div style="padding:8px 10px;border-radius:8px;margin-bottom:4px;font-size:11px;border:1px solid ${f.ok?'rgba(76,175,80,.2)':'rgba(255,152,0,.2)'};background:${f.ok?'rgba(76,175,80,.06)':'rgba(255,152,0,.06)'}"><span style="font-weight:700;color:${f.ok?'var(--gn)':'var(--am)'}">${f.ok?'✓':'\u26A0'} ${f.rule}</span><br><span style="color:var(--m)">${f.tip}</span></div>`).join('')+'</div>'}
     // What AI heard
     let heardHTML='';
     if(st.recognizedText&&st.recognizedText.trim()){heardHTML=`<div style="margin-top:10px;padding:8px 10px;border-radius:8px;background:var(--h);border:1px solid var(--b)"><p style="font-size:10px;color:var(--m);margin-bottom:4px;font-weight:600">AI TRANSCRIPTION OF YOUR RECITATION</p><p class="ar" style="font-size:16px;text-align:center">${st.recognizedText}</p></div>`}
     // Summary line
     let summaryHTML='';
-    if(st.comparisonDetails&&hasScore){const c=st.comparisonDetails;summaryHTML=`<p style="font-size:11px;color:var(--m);margin-top:8px">${c.matched}/${c.total} words correct${c.wrong?' \u00B7 '+c.wrong+' wrong':''}${c.missed?' \u00B7 '+c.missed+' missed':''}</p>`}
-    pr=`<div style="text-align:center">${hasScore?sr(sc,90,7):''}<p style="font-size:15px;font-weight:700;color:${cl};margin:10px 0 4px">${mg}</p>${summaryHTML}${wordsHTML}${heardHTML}${fbHTML}<div style="display:flex;justify-content:center;gap:10px;margin-top:16px"><button class="ob" onclick="rtA()">\u21BB Retry</button>${st.ai<st.ad.length-1?`<button class="gb" onclick="nxA()">Next ${I.nxt}</button>`:''}</div></div>`}
+    if(st.comparisonDetails&&hasScore){const c=st.comparisonDetails;summaryHTML=`<p style="font-size:11px;color:var(--m);margin-top:8px">${c.matched}/${c.total} words correct${c.wrong?' · '+c.wrong+' wrong':''}${c.missed?' · '+c.missed+' missed':''}</p>`}
+    pr=`<div style="text-align:center">${hasScore?sr(sc,90,7):''}<p style="font-size:15px;font-weight:700;color:${cl};margin:10px 0 4px">${mg}</p>${summaryHTML}${wordsHTML}${heardHTML}${fbHTML}<div style="display:flex;justify-content:center;gap:10px;margin-top:16px"><button class="ob" onclick="rtA()">↻ Retry</button>${st.ai<st.ad.length-1?`<button class="gb" onclick="nxA()">Next ${I.nxt}</button>`:''}</div></div>`}
 
   // Download status for this surah
   const dlSt=dlProgress[s.n];
@@ -214,126 +214,4 @@ async function aiTranscribe(wav){
 }
 // Normalize Arabic for comparison
 function norm(t){
-  return t.replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED]/g,'')
-    .replace(/[\u0671]/g,'\u0627').replace(/[\u0625\u0623\u0622\u0672\u0673]/g,'\u0627')
-    .replace(/\u0629/g,'\u0647').replace(/\u0649/g,'\u064A').replace(/\s+/g,' ').trim();
-}
-// Word-by-word comparison using Levenshtein alignment
-function cmpWords(heard,expected){
-  const hw=norm(heard).split(' ').filter(w=>w),ew=norm(expected).split(' ').filter(w=>w);
-  const eorig=expected.split(' ').filter(w=>w.trim());
-  if(!hw.length)return{score:0,words:eorig.map(w=>({word:w,st:'missed'})),matched:0,wrong:0,missed:ew.length,total:ew.length,extra:0};
-  const m=ew.length,n=hw.length;
-  const dp=Array.from({length:m+1},()=>Array(n+1).fill(0));
-  for(let i=0;i<=m;i++)dp[i][0]=i;
-  for(let j=0;j<=n;j++)dp[0][j]=j;
-  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++){
-    if(ew[i-1]===hw[j-1])dp[i][j]=dp[i-1][j-1];
-    else dp[i][j]=1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
-  }
-  const wr=eorig.map(w=>({word:w,st:'missed'}));
-  let i=m,j=n;
-  while(i>0&&j>0){
-    if(ew[i-1]===hw[j-1]){wr[i-1].st='ok';i--;j--}
-    else if(dp[i-1][j-1]<=dp[i-1][j]&&dp[i-1][j-1]<=dp[i][j-1]){wr[i-1].st='wrong';i--;j--}
-    else if(dp[i-1][j]<dp[i][j-1]){wr[i-1].st='missed';i--}
-    else{j--}
-  }
-  while(i>0){wr[i-1].st='missed';i--}
-  const matched=wr.filter(w=>w.st==='ok').length,wrong=wr.filter(w=>w.st==='wrong').length,missed=wr.filter(w=>w.st==='missed').length;
-  return{score:ew.length?Math.round(matched/ew.length*100):0,words:wr,matched,wrong,missed,total:ew.length,extra:Math.max(0,n-m)};
-}
-// Start recording
-function stR(){
-  navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}}).then(s=>{
-    rc=[];mr=new MediaRecorder(s);
-    mr.ondataavailable=e=>{if(e.data.size>0)rc.push(e.data)};
-    mr.onstop=()=>{s.getTracks().forEach(t=>t.stop());evR(new Blob(rc,{type:'audio/webm'}))};
-    mr.start(100);st.ph='recording';R();
-  }).catch(()=>{alert('Microphone access required.')})
-}
-function spR(){if(mr&&mr.state!=='inactive'){mr.stop();st.ph='evaluating';st.evalMsg='Sending to Quran AI...';R()}}
-// Evaluate with AI
-async function evR(blob){
-  const tx=st.ad[st.ai]?.txt||'';
-  try{
-    const wav=await toWav(blob);
-    st.evalMsg='Analyzing your recitation with AI...';R();
-    let res=await aiTranscribe(wav);
-    if(res.err==='loading'){
-      st.evalMsg='AI model warming up — first use takes ~20s...';R();
-      await new Promise(r=>setTimeout(r,20000));
-      res=await aiTranscribe(wav);
-    }
-    if(res.err){st.sc=null;st.ph='result';st.recognizedText='';st.wordResults=[];st.feedback=[{rule:'AI Unavailable',ok:false,tip:'Model could not process audio. Try again in 30 seconds — first use requires a cold start.'}];st.comparisonDetails=null;R();return}
-    // Real comparison
-    const c=cmpWords(res.text,tx);
-    st.sc=c.score;st.wordResults=c.words;st.recognizedText=res.text;st.comparisonDetails=c;
-    st.feedback=[];
-    if(c.score===100)st.feedback.push({rule:'Perfect! \u2714',ok:true,tip:'\u0645\u0627 \u0634\u0627\u0621 \u0627\u0644\u0644\u0647 \u2014 Every word matched!'});
-    else{
-      if(c.missed>0)st.feedback.push({rule:c.missed+' word'+(c.missed>1?'s':'')+' missed',ok:false,tip:'Red words were not detected in your recitation'});
-      if(c.wrong>0)st.feedback.push({rule:c.wrong+' word'+(c.wrong>1?'s':'')+' mispronounced',ok:false,tip:'Orange words were recited differently'});
-      if(c.extra>0)st.feedback.push({rule:c.extra+' extra word'+(c.extra>1?'s':''),ok:false,tip:'You said words not in this ayah'});
-      if(c.score<50)st.feedback.push({rule:'Needs practice',ok:false,tip:'Listen to the teacher again and try matching word by word'});
-    }
-    if(tx.includes('\u0651'))st.feedback.push({rule:'Tajweed: Ghunnah (\u063a\u0646\u0629)',ok:c.score>=80,tip:'Nasalization on shaddah letters \u2014 hold 2 counts'});
-    st.ph='result';
-    const sn=st.su.n,ai=st.ai,k=sn+'-'+ai,p=st.pr,today=new Date().toDateString(),ld=p.ld?new Date(p.ld).toDateString():null;
-    if(ld!==today){const y=new Date();y.setDate(y.getDate()-1);p.sk=ld===y.toDateString()?p.sk+1:1;p.td=1}else{p.td=(p.td||0)+1}
-    p.ls=sn;p.la=ai;p.tt++;p.sc[k]=Math.max(p.sc[k]||0,c.score);p.ld=new Date().toISOString();sv();R();
-  }catch(e){console.error('evR error:',e);st.sc=null;st.ph='result';st.feedback=[{rule:'Error',ok:false,tip:'Could not process recording: '+e.message}];R()}
-}
-
-// Tajweed text highlighting — color-code common rules
-function tjHL(txt){
-  // This is simplified — a full implementation would parse every letter's context
-  let h=txt;
-  // Shaddah + noon/meem = ghunnah (green)
-  h=h.replace(/(نّ|مّ)/g,'<span class="tj-gn">$1</span>');
-  // Qalqalah letters with visible sukoon context (red)
-  h=h.replace(/([قطبجد])ْ/g,'<span class="tj-qlq">$1ْ</span>');
-  // Madd (cyan) — alef maddah
-  h=h.replace(/(آ|ٓ)/g,'<span class="tj-md">$1</span>');
-  return h;
-}
-
-// Download surah for offline
-let dlProgress={};
-function dlSurah(n){
-  if(dlProgress[n]==='done'||dlProgress[n]==='loading')return;
-  dlProgress[n]='loading';R();
-  // Fetch surah data (triggers service worker caching)
-  Promise.all([
-    fetch(`${API}/surah/${n}/${REC}`).then(r=>r.json()),
-    fetch(`${API}/surah/${n}/${TR}`).then(r=>r.json())
-  ]).then(([ar])=>{
-    // Pre-fetch all audio files to trigger SW cache
-    const audioUrls=ar.data.ayahs.map(a=>a.audio).filter(Boolean);
-    return Promise.allSettled(audioUrls.map(u=>fetch(u)));
-  }).then(()=>{
-    dlProgress[n]='done';
-    // Save download state
-    const dl=JSON.parse(localStorage.getItem('m_dl')||'{}');dl[n]=true;localStorage.setItem('m_dl',JSON.stringify(dl));
-    R();
-  }).catch(()=>{dlProgress[n]=null;R()});
-}
-// Load saved download states
-try{const dl=JSON.parse(localStorage.getItem('m_dl')||'{}');Object.keys(dl).forEach(k=>{dlProgress[parseInt(k)]='done'})}catch(e){}
-
-// ─── Offline detection ──────────────────────────────
-window.addEventListener('online',()=>{document.getElementById('offline-bar').classList.remove('show')});
-window.addEventListener('offline',()=>{document.getElementById('offline-bar').classList.add('show')});
-if(!navigator.onLine)document.getElementById('offline-bar').classList.add('show');
-
-// ─── PWA Service Worker Registration ────────────────
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('/sw.js').then(r=>{
-    console.log('SW registered',r.scope);
-  }).catch(e=>console.log('SW failed',e));
-}
-
-R();
-</script>
-</body>
-</html>
+  return t.replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED]/g,'
