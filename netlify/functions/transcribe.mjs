@@ -1,13 +1,87 @@
-// Netlify Function: Fixed proxy to Tarteel Whisper on HuggingFace
-// Uses the NEW router.huggingface.co endpoint (api-inference is deprecated)
+// Netlify Function: Transcribe Arabic Quran audio using AssemblyAI
+// AssemblyAI is reliable, has free tier, and great Arabic support
 
-const HF_API_KEY = Netlify.env.get("HF_API_KEY");
-const HF_MODEL_ID = "tarteel-ai/whisper-base-ar-quran";
-// NEW ENDPOINT - api-inference.huggingface.co is deprecated!
-const HF_API_URL = `https://router.huggingface.co/hf-inference/models/${HF_MODEL_ID}`;
+const ASSEMBLYAI_KEY = Netlify.env.get("ASSEMBLYAI_KEY");
+const ASSEMBLYAI_UPLOAD_URL = "https://api.assemblyai.com/v1/upload";
+const ASSEMBLYAI_TRANSCRIBE_URL = "https://api.assemblyai.com/v1/transcript";
 
-const MAX_RETRIES = 5;
-const BASE_WAIT = 20000; // 20 seconds
+async function uploadAudio(audioData) {
+  console.log("[Transcribe] Uploading audio to AssemblyAI...");
+  
+  const response = await fetch(ASSEMBLYAI_UPLOAD_URL, {
+    method: "POST",
+    headers: {
+      Authorization: ASSEMBLYAI_KEY,
+    },
+    body: audioData,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Upload failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.upload_url;
+}
+
+async function transcribeAudio(audioUrl) {
+  console.log("[Transcribe] Starting transcription...");
+  
+  // Submit transcription job
+  const submitResponse = await fetch(ASSEMBLYAI_TRANSCRIBE_URL, {
+    method: "POST",
+    headers: {
+      Authorization: ASSEMBLYAI_KEY,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      audio_url: audioUrl,
+      language_code: "ar", // Arabic
+    }),
+  });
+
+  if (!submitResponse.ok) {
+    throw new Error(`Transcription submission failed: ${submitResponse.status}`);
+  }
+
+  const submitData = await submitResponse.json();
+  const transcriptId = submitData.id;
+  
+  console.log(`[Transcribe] Job ID: ${transcriptId}`);
+
+  // Poll for completion (max 60 seconds)
+  let attempts = 0;
+  const maxAttempts = 60;
+
+  while (attempts < maxAttempts) {
+    const pollResponse = await fetch(
+      `${ASSEMBLYAI_TRANSCRIBE_URL}/${transcriptId}`,
+      {
+        headers: {
+          Authorization: ASSEMBLYAI_KEY,
+        },
+      }
+    );
+
+    const pollData = await pollResponse.json();
+    console.log(`[Transcribe] Status: ${pollData.status}`);
+
+    if (pollData.status === "completed") {
+      console.log(`[Transcribe] ✓ Transcription complete!`);
+      return pollData.text || "";
+    }
+
+    if (pollData.status === "error") {
+      throw new Error(`Transcription error: ${pollData.error}`);
+    }
+
+    // Wait 1 second before next poll
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    attempts++;
+  }
+
+  throw new Error("Transcription timeout");
+}
 
 export default async (request) => {
   if (request.method !== "POST") {
@@ -18,6 +92,18 @@ export default async (request) => {
   }
 
   try {
+    // Check if API key is configured
+    if (!ASSEMBLYAI_KEY) {
+      console.error("[Transcribe] ASSEMBLYAI_KEY not configured!");
+      return new Response(
+        JSON.stringify({
+          error: "no_api_key",
+          message: "Server not configured. Please contact admin.",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     const audioData = await request.arrayBuffer();
 
     if (!audioData || audioData.byteLength < 100) {
@@ -27,139 +113,45 @@ export default async (request) => {
       });
     }
 
-    // Build headers
-    const headers = {
-      "Content-Type": "audio/wav",
-    };
+    console.log(
+      `[Transcribe] Received ${audioData.byteLength} bytes of audio`
+    );
 
-    // Add API key if available
-    if (HF_API_KEY) {
-      headers["Authorization"] = `Bearer ${HF_API_KEY}`;
-      console.log("[Transcribe] Using HuggingFace API key for faster inference");
-    } else {
-      console.warn("[Transcribe] No HF_API_KEY set - using free tier (slower)");
+    // Upload audio
+    const audioUrl = await uploadAudio(audioData);
+    console.log(`[Transcribe] Audio uploaded to: ${audioUrl}`);
+
+    // Transcribe
+    const text = await transcribeAudio(audioUrl);
+
+    if (!text || text.trim().length === 0) {
+      console.warn("[Transcribe] Empty transcription returned");
+      return new Response(
+        JSON.stringify({
+          error: "no_text",
+          detail: "No speech detected in audio",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
     }
 
-    // Retry loop
-    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-      try {
-        console.log(`[Transcribe] Attempt ${attempt + 1}/${MAX_RETRIES} to ${HF_MODEL_ID}`);
-        console.log(`[Transcribe] Using endpoint: ${HF_API_URL}`);
+    console.log(`[Transcribe] ✓ Success! Text: "${text.substring(0, 50)}..."`);
 
-        // Wait before retry (except on first attempt)
-        if (attempt > 0) {
-          const waitTime = BASE_WAIT + attempt * 15000; // 20s, 35s, 50s, 65s, 80s
-          console.log(`[Transcribe] Waiting ${waitTime}ms before retry...`);
-          await new Promise((resolve) => setTimeout(resolve, waitTime));
-        }
-
-        // Make request with 3-minute timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 180000);
-
-        const response = await fetch(HF_API_URL, {
-          method: "POST",
-          headers,
-          body: audioData,
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        console.log(`[Transcribe] Response status: ${response.status}`);
-
-        // Handle 503 (model loading)
-        if (response.status === 503) {
-          const data = await response.json();
-          console.log(`[Transcribe] Model loading (503):`, data);
-          
-          if (attempt < MAX_RETRIES - 1) {
-            continue; // Retry
-          } else {
-            return new Response(
-              JSON.stringify({
-                error: "loading",
-                message: "Model is warming up - please wait 2-3 minutes and try again",
-              }),
-              {
-                status: 200,
-                headers: { "Content-Type": "application/json" },
-              }
-            );
-          }
-        }
-
-        // Handle other errors
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`[Transcribe] HTTP ${response.status}:`, errorText.substring(0, 200));
-          
-          return new Response(
-            JSON.stringify({
-              error: "api_error",
-              status: response.status,
-              detail: errorText.substring(0, 200),
-            }),
-            {
-              status: 200,
-              headers: { "Content-Type": "application/json" },
-            }
-          );
-        }
-
-        // Parse response
-        const data = await response.json();
-        
-        if (data.text) {
-          console.log(`[Transcribe] ✓ Success on attempt ${attempt + 1}:`, data.text.substring(0, 50));
-          return new Response(JSON.stringify({ text: data.text }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-
-        console.warn(`[Transcribe] No text in response:`, data);
-        return new Response(
-          JSON.stringify({
-            error: "no_text",
-            detail: "API returned valid response but no text field",
-          }),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-
-      } catch (err) {
-        console.error(`[Transcribe] Attempt ${attempt + 1} failed:`, err.message);
-
-        // If it's the last attempt, return error
-        if (attempt === MAX_RETRIES - 1) {
-          return new Response(
-            JSON.stringify({
-              error: "network_error",
-              detail: err.message,
-              message: "Could not reach AI service. Please check your internet and try again.",
-            }),
-            {
-              status: 200,
-              headers: { "Content-Type": "application/json" },
-            }
-          );
-        }
-      }
-    }
+    return new Response(JSON.stringify({ text }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
 
   } catch (err) {
-    console.error("[Transcribe] Fatal error:", err);
+    console.error("[Transcribe] Error:", err.message);
     return new Response(
       JSON.stringify({
-        error: "server_error",
-        message: "Internal server error",
+        error: "transcription_error",
+        message: "Could not transcribe audio",
         detail: err.message,
       }),
       {
-        status: 500,
+        status: 200,
         headers: { "Content-Type": "application/json" },
       }
     );
