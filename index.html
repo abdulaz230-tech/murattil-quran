@@ -67,6 +67,8 @@ function R(){
   h+=`<nav class="nv"><div>${[['home','Home',I.home],['browse','Browse',I.book],['learn','Learn',I.mic],['progress','Progress',I.chart],['settings','Settings',I.gear]].map(([id,l,ic])=>`<button onclick="N('${id}')" class="${st.v===id?'on':'off'}">${ic}<span>${l}</span></button>`).join('')}</div></nav>`;
   document.getElementById('app').innerHTML=h;
   if(st.v==='browse'&&st.q){const el=document.getElementById('si');if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length)}}
+  // Auto-scroll ayah selector to current ayah
+  if(st.v==='learn'){const sc=document.getElementById('ayah-scroll');if(sc){const btn=sc.children[st.ai+1];if(btn)btn.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'})}}
 }
 
 function wv(col,on){return Array.from({length:24},()=>`<span style="width:3px;height:${on?Math.random()*26+4:3}px;background:${col};opacity:${on?.85:.2};border-radius:2px"></span>`).join('')}
@@ -96,9 +98,17 @@ function rLearn(){
   const s=st.su,a=st.ad[st.ai];
   if(!a)return`<div class="pg"><p style="color:var(--m)">No data. Check internet and retry.</p><button class="gb" style="margin-top:12px" onclick="selS(${s.n})">Retry</button></div>`;
   const ps=st.pr.sc[s.n+'-'+st.ai];
-  const mx=Math.min(st.ad.length,40);
-  let dots='';for(let i=0;i<mx;i++){const sc=st.pr.sc[s.n+'-'+i];dots+=`<span onclick="goA(${i})" style="display:inline-block;width:${i===st.ai?20:7}px;height:7px;border-radius:4px;cursor:pointer;transition:all .3s;background:${i===st.ai?'var(--g)':sc?(sc>=80?'var(--gn)':'var(--am)'):'rgba(136,153,170,.2)'}"></span>`}
-  if(st.ad.length>40)dots+=`<span style="font-size:10px;color:var(--m);margin-left:4px">+${st.ad.length-40}</span>`;
+  // Ayah selector — scrollable number grid
+  let ayahNav=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><button onclick="pvA()" style="width:32px;height:32px;border-radius:50%;background:var(--h);color:var(--m);display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid var(--b);font-size:12px;${st.ai===0?'opacity:.3;pointer-events:none':''}">${I.prv}</button><div style="flex:1;overflow-x:auto;display:flex;gap:4px;padding:4px 0;scrollbar-width:none;-webkit-overflow-scrolling:touch" id="ayah-scroll"><style>#ayah-scroll::-webkit-scrollbar{display:none}</style>`;
+  for(let i=0;i<st.ad.length;i++){
+    const sc=st.pr.sc[s.n+'-'+i];
+    const isCur=i===st.ai;
+    const bg=isCur?'var(--g)':sc?(sc>=80?'rgba(76,175,80,.2)':sc>=60?'rgba(255,152,0,.2)':'rgba(239,83,80,.2)'):'var(--h)';
+    const col=isCur?'#0a0f1a':sc?(sc>=80?'var(--gn)':sc>=60?'var(--am)':'var(--rd)'):'var(--m)';
+    const bdr=isCur?'var(--g)':sc?'transparent':'var(--b)';
+    ayahNav+=`<button onclick="goA(${i})" style="min-width:30px;height:30px;border-radius:8px;background:${bg};color:${col};font-size:11px;font-weight:${isCur?'800':'600'};border:1px solid ${bdr};flex-shrink:0">${i+1}</button>`;
+  }
+  ayahNav+=`</div><button onclick="nxA()" style="width:32px;height:32px;border-radius:50%;background:var(--h);color:var(--m);display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid var(--b);font-size:12px;${st.ai>=st.ad.length-1?'opacity:.3;pointer-events:none':''}">${I.nxt}</button></div>`;
 
   let pr='';
   if(st.ph==='idle')pr=`<p style="font-size:13px;color:var(--m);margin-bottom:14px;text-align:center">Listen to the teacher, then record your recitation</p><div style="text-align:center"><button class="gb" onclick="stL()">${I.play} Start Lesson</button></div>`;
@@ -165,11 +175,11 @@ function rLearn(){
 
   return`<div class="pg fi">
   <div class="cd" style="text-align:center;padding:18px;margin-bottom:12px;border-color:rgba(201,168,76,.15);background:linear-gradient(135deg,var(--h),var(--c))"><p class="ar" style="font-size:22px;color:var(--g)">سورة ${s.ar}</p><p style="font-size:12px;color:var(--m);margin-top:3px">${s.en} · ${s.ac} Ayahs · ${s.tp}</p><p style="font-size:10px;color:var(--m);margin-top:2px">Teacher: Sheikh Al-Husary</p><div style="margin-top:8px">${dlBtn}</div></div>
-  <div style="display:flex;justify-content:center;gap:3px;margin-bottom:12px;flex-wrap:wrap;padding:0 8px">${dots}</div>
+  ${ayahNav}
   <div class="cd" style="text-align:center;padding:28px 20px;margin-bottom:12px;min-height:140px;display:flex;flex-direction:column;justify-content:center"><p style="font-size:10px;font-weight:700;color:var(--g);letter-spacing:1.5px;margin-bottom:14px">AYAH ${a.num}</p><p class="ar" style="font-size:26px;text-align:center">${tjHL(a.txt)}</p>${st.tr?`<p style="font-size:12px;color:var(--m);margin-top:14px;line-height:1.6">${a.trl}</p>`:''}${ps?`<p style="font-size:10px;color:var(--gn);margin-top:8px">Best: ${ps}%</p>`:''}<p style="font-size:9px;color:var(--m);margin-top:6px;opacity:.6">Colors: <span class="tj-gn">Ghunnah</span> · <span class="tj-qlq">Qalqalah</span> · <span class="tj-md">Madd</span></p></div>
   <div class="cd" style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><p style="font-size:10px;font-weight:700;color:var(--g);letter-spacing:1.2px">TEACHER AUDIO</p><div style="display:flex;gap:4px">${[0.5,0.75,1].map(sp=>`<button onclick="sSp(${sp})" style="padding:4px 10px;border-radius:6px;font-size:10px;font-weight:600;${st.sp===sp?'background:var(--g);color:#0a0f1a':'background:var(--h);color:var(--m)'}">${sp}x</button>`).join('')}</div></div><div style="display:flex;align-items:center;gap:10px"><button onclick="tgT()" style="width:42px;height:42px;border-radius:50%;background:${st.pl?'var(--am)':'var(--g)'};color:#0a0f1a;display:flex;align-items:center;justify-content:center;flex-shrink:0;${st.pl?'animation:pu 2s ease infinite':''}">${st.pl?I.pause:I.play}</button><div class="wv" style="flex:1">${wv('var(--g)',st.pl)}</div></div></div>
   <div class="cd" style="margin-bottom:12px"><p style="font-size:10px;font-weight:700;color:var(--g);letter-spacing:1.2px;margin-bottom:12px">YOUR RECITATION</p>${pr}</div>
-  <div style="display:flex;justify-content:space-between"><button class="ob" onclick="pvA()" ${st.ai===0?'disabled style="opacity:.3;pointer-events:none"':''}>${I.prv} Prev</button><button class="ob" onclick="st.tr=!st.tr;R()">${st.tr?'Hide':'Show'} Translation</button><button class="ob" onclick="nxA()" ${st.ai>=st.ad.length-1?'disabled style="opacity:.3;pointer-events:none"':''}>Next ${I.nxt}</button></div></div>`}
+  <div style="text-align:center"><button class="ob" onclick="st.tr=!st.tr;R()">${st.tr?'Hide':'Show'} Translation</button></div></div>`}
 
 function rProg(){
   const sc=Object.entries(st.pr.sc),rc=sc.slice(-15),av=rc.length?Math.round(rc.reduce((s,[,v])=>s+v,0)/rc.length):0;
