@@ -1,5 +1,5 @@
 // Netlify Function: proxy audio to HuggingFace Whisper for Quran transcription
-// Uses openai/whisper-large-v3 (available on free HF Inference API)
+// IMPORTANT: Uses openai/whisper-large-v3 because tarteel-ai model is NOT on free HF API
 
 const HF_URL = "https://router.huggingface.co/hf-inference/models/openai/whisper-large-v3";
 
@@ -13,7 +13,7 @@ export default async (request) => {
 
   try {
     const audioData = await request.arrayBuffer();
-    console.log("Received audio:", audioData.byteLength, "bytes");
+    console.log("Audio received:", audioData.byteLength, "bytes");
 
     if (!audioData || audioData.byteLength < 100) {
       return new Response(JSON.stringify({ error: "no_audio" }), {
@@ -22,7 +22,6 @@ export default async (request) => {
       });
     }
 
-    // Forward raw audio to HuggingFace
     const hfRes = await fetch(HF_URL, {
       method: "POST",
       headers: { "Content-Type": "audio/wav" },
@@ -39,24 +38,22 @@ export default async (request) => {
           headers: { "Content-Type": "application/json" },
         });
       }
-      return new Response(JSON.stringify({ error: "hf_error", status: hfRes.status, detail: hfBody.substring(0, 300) }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "hf_error", status: hfRes.status, detail: hfBody.substring(0, 300) }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
     }
 
-    // Success - return transcription
     return new Response(hfBody, {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
-
   } catch (err) {
     console.error("Proxy error:", err);
-    return new Response(JSON.stringify({ error: "proxy_error", detail: err.message }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "proxy_error", detail: err.message }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
   }
 };
 
