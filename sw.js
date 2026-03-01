@@ -1,6 +1,5 @@
-const CACHE_NAME = 'murattil-v2';
+const CACHE_NAME = 'murattil-v3';
 const APP_SHELL = ['/', '/index.html', '/manifest.json'];
-
 // Install: cache the app shell
 self.addEventListener('install', (e) => {
   e.waitUntil(
@@ -8,7 +7,6 @@ self.addEventListener('install', (e) => {
   );
   self.skipWaiting();
 });
-
 // Activate: clean old caches
 self.addEventListener('activate', (e) => {
   e.waitUntil(
@@ -18,15 +16,13 @@ self.addEventListener('activate', (e) => {
   );
   self.clients.claim();
 });
-
 // Fetch strategy:
-// - App shell: cache first
-// - Quran API (text): network first, fall back to cache (so it works offline after first load)
+// - App shell: network first (so updates are picked up), fall back to cache
+// - Quran API (text): network first, fall back to cache
 // - Audio files: cache first (once downloaded, always available offline)
 // - Everything else: network first
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
-
   // Quran audio — cache first (big files, don't re-download)
   if (url.hostname === 'cdn.islamic.network' || url.pathname.includes('/audio/')) {
     e.respondWith(
@@ -42,7 +38,6 @@ self.addEventListener('fetch', (e) => {
     );
     return;
   }
-
   // Quran text API — network first, cache fallback
   if (url.hostname === 'api.alquran.cloud') {
     e.respondWith(
@@ -56,7 +51,6 @@ self.addEventListener('fetch', (e) => {
     );
     return;
   }
-
   // Google Fonts — cache first
   if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
     e.respondWith(
@@ -72,15 +66,17 @@ self.addEventListener('fetch', (e) => {
     );
     return;
   }
-
-  // App shell and other local files — cache first, network fallback
+  // App shell — NETWORK FIRST so updates are picked up immediately
   if (url.origin === self.location.origin) {
     e.respondWith(
-      caches.match(e.request).then(cached => cached || fetch(e.request))
+      fetch(e.request).then(response => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+        return response;
+      }).catch(() => caches.match(e.request))
     );
     return;
   }
-
   // Default: network first
   e.respondWith(
     fetch(e.request).catch(() => caches.match(e.request))
